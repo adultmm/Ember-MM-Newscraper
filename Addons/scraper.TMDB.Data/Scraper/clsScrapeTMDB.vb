@@ -513,7 +513,7 @@ Public Class Scraper
 
         'Title
         If FilteredOptions.bMainTitle Then
-            If Not String.IsNullOrEmpty(Result.Title) Then
+            If Not String.IsNullOrEmpty(Result.Title) AndAlso Not MovieNeedFixTMDBFallbackToOriginalTitle(Result, _client) Then
                 nMovie.Title = Result.Title
             ElseIf RunFallback_Movie(Result.Id) AndAlso Not String.IsNullOrEmpty(_Fallback_Movie.Title) Then
                 nMovie.Title = _Fallback_Movie.Title
@@ -1369,6 +1369,8 @@ Public Class Scraper
 
         Movies = APIResult.Result
 
+        FixTMBDFallbackToOriginalTitle(Movies, strMovie, iYear, _addonSettings.GetAdultItems, Page)
+
         If Movies.TotalResults = 0 AndAlso _addonSettings.FallBackEng Then
             APIResult = Task.Run(Function() _clientE.SearchMovieAsync(strMovie, Page, _addonSettings.GetAdultItems, iYear))
             Movies = APIResult.Result
@@ -1434,6 +1436,7 @@ Public Class Scraper
                     Movies = APIResult.Result
                 Else
                     APIResult = Task.Run(Function() _client.SearchMovieAsync(strMovie, Page, _addonSettings.GetAdultItems, iYear))
+                    FixTMBDFallbackToOriginalTitle(APIResult.Result, strMovie, iYear, _addonSettings.GetAdultItems, Page)
                     Movies = APIResult.Result
                 End If
             End While
@@ -1551,6 +1554,50 @@ Public Class Scraper
 
         Return R
     End Function
+
+    Private Sub FixTMBDFallbackToOriginalTitle(ByRef Movies As TMDbLib.Objects.General.SearchContainer(Of TMDbLib.Objects.Search.SearchMovie), strMovie As String, iYear As Integer, GetAdultItems As Boolean, Page As Integer)
+        'telling the truth if _addonSettings.FallBackEng = False we should set the Title to nothing, but it could cause other problems in the software
+        If Not SameLanguages(_client.DefaultLanguage, "en-US") AndAlso Movies.TotalResults > 0 AndAlso _addonSettings.FallBackEng Then
+            Dim EnglishMovies As TMDbLib.Objects.General.SearchContainer(Of TMDbLib.Objects.Search.SearchMovie) = Nothing
+            For Each m In Movies.Results
+                If MovieNeedFixTMDBFallbackToOriginalTitle(m, _client) Then
+                    If (EnglishMovies Is Nothing) Then
+                        Dim APIResult As Task(Of TMDbLib.Objects.General.SearchContainer(Of TMDbLib.Objects.Search.SearchMovie)) = Task.Run(Function() _clientE.SearchMovieAsync(strMovie, Page, GetAdultItems, iYear))
+                        EnglishMovies = APIResult.Result
+                    End If
+                    Dim filteredById = From em In EnglishMovies.Results Where (em.Id = m.Id)
+                    If filteredById.Count > 0 Then
+                        m.Title = filteredById(0).Title
+                    Else
+                        Dim APIMovieResult As Task(Of TMDbLib.Objects.Movies.Movie)
+                        APIMovieResult = Task.Run(Function() _client.GetMovieAsync(m.Id))
+                        If APIMovieResult.Result IsNot Nothing Then
+                            m.Title = APIMovieResult.Result.Title
+                        End If
+                    End If
+                End If
+            Next
+        End If
+    End Sub
+
+    Private Shared Function MovieNeedFixTMDBFallbackToOriginalTitle(m As TMDbLib.Objects.Search.SearchMovie, downloadClient As TMDbLib.Client.TMDbClient) As Boolean
+        Return Not SameLanguages(m.OriginalLanguage, downloadClient.DefaultLanguage) AndAlso m.Title = m.OriginalTitle AndAlso Not SameLanguages(m.OriginalLanguage, "en")
+    End Function
+
+    Private Shared Function MovieNeedFixTMDBFallbackToOriginalTitle(m As TMDbLib.Objects.Movies.Movie, downloadClient As TMDbLib.Client.TMDbClient) As Boolean
+        Return Not SameLanguages(m.OriginalLanguage, downloadClient.DefaultLanguage) AndAlso m.Title = m.OriginalTitle AndAlso Not SameLanguages(m.OriginalLanguage, "en")
+    End Function
+
+    Private Shared Function SameLanguages(lang1 As String, lang2 As String) As Boolean
+        If lang1 Is Nothing Then
+            Return lang2 Is Nothing
+        ElseIf lang2 Is Nothing Then
+            Return False
+        Else
+            Return lang1.Substring(0, 2) = lang2.Substring(0, 2)
+        End If
+    End Function
+
 
 #End Region 'Methods
 
