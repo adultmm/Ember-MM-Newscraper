@@ -18,6 +18,8 @@
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
 
+Imports System.Windows.Forms
+
 Public Class Interfaces
 
 #Region "Nested Interfaces"
@@ -532,6 +534,29 @@ Public Class Interfaces
 #End Region 'Fields
 
     End Structure
+
+    ''' <summary>
+    ''' Interface for Panels for MovieEditDialog (dlgEditMovie)
+    ''' </summary>
+    ''' <remarks></remarks>
+    Public Interface MovieEditPanel
+        Public Interface OnShowListener
+            ''' <summary>
+            ''' Called when the tab of the panel is being visible. (The tab selected/clicked by the user.)
+            ''' </summary>
+            Sub OnShow(DBElement As Database.DBElement)
+        End Interface
+
+        ''' <summary>
+        ''' Return the Panel must be shown on the Editor tab
+        ''' </summary>
+        ReadOnly Property EditPanel As Panel
+
+        ''' <summary>
+        ''' Return the Text of the TabPanel
+        ''' </summary>
+        ReadOnly Property TabText As String
+    End Interface
 
 #End Region 'Nested Types
 

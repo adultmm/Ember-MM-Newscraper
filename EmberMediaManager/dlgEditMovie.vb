@@ -1018,6 +1018,8 @@ Public Class dlgEditMovie
 
             lblPosterSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbPoster.Image.Width, pbPoster.Image.Height)
             lblPosterSize.Visible = True
+
+            ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.OnPosterChangedDuringEdit_Movie, Nothing, Me, False, DirectCast(tmpDBElement.CloneDeep(), Database.DBElement))
         End If
     End Sub
 
@@ -1434,6 +1436,22 @@ Public Class dlgEditMovie
         pnlFrameExtrator.Controls.Add(DirectCast(paramsFrameExtractor(0), Panel))
         If String.IsNullOrEmpty(pnlFrameExtrator.Controls.Item(0).Name) Then
             tcEdit.TabPages.Remove(tpFrameExtraction)
+        End If
+
+        Dim paramsEditPanels As New List(Of Object)()
+        ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.EditorTabPopulate_Movie, paramsEditPanels, Nothing, True, tmpDBElement)
+        If paramsEditPanels.Count > 0 Then
+            For Each objEditPanel In paramsEditPanels
+                Try
+                    Dim movieEditPanel As Interfaces.MovieEditPanel = DirectCast(objEditPanel, Interfaces.MovieEditPanel)
+                    tcEdit.TabPages.Add(movieEditPanel.TabText)
+                    Dim tpEditor As TabPage = tcEdit.TabPages(tcEdit.TabPages.Count - 1)
+                    tpEditor.Controls.Add(movieEditPanel.EditPanel)
+                    tpEditor.Tag = paramsEditPanels(0)
+                Catch ex As Exception
+                    logger.Error(ex, "Cannot add editor panel: {0}", objEditPanel)
+                End Try
+            Next
         End If
 
         FillInfo()
@@ -2238,6 +2256,34 @@ Public Class dlgEditMovie
         btnRescrape.Enabled = False
         btnChangeMovie.Enabled = False
 
+        SetDBElementInfo(tmpDBElement)
+
+        If Path.GetExtension(tmpDBElement.Filename) = ".disc" Then
+            Dim StubFile As String = tmpDBElement.Filename
+            Dim Title As String = txtMediaStubTitle.Text
+            Dim Message As String = txtMediaStubMessage.Text
+            MediaStub.SaveDiscStub(StubFile, Title, Message)
+        End If
+
+        If Not Master.eSettings.MovieImagesNotSaveURLToNfo AndAlso pResults.Posters.Count > 0 Then tmpDBElement.Movie.Thumb = pResults.Posters
+        If Not Master.eSettings.MovieImagesNotSaveURLToNfo AndAlso fResults.Fanart.Thumb.Count > 0 Then tmpDBElement.Movie.Fanart = pResults.Fanart
+
+        Dim removeSubtitles As New List(Of MediaContainers.Subtitle)
+        For Each Subtitle In tmpDBElement.Subtitles
+            If Subtitle.ToRemove Then
+                removeSubtitles.Add(Subtitle)
+            End If
+        Next
+        For Each Subtitle In removeSubtitles
+            If File.Exists(Subtitle.SubsPath) Then
+                File.Delete(Subtitle.SubsPath)
+            End If
+            tmpDBElement.Subtitles.Remove(Subtitle)
+        Next
+
+    End Sub
+
+    Private Sub SetDBElementInfo(tmpDBElement As Database.DBElement)
         If Not String.IsNullOrEmpty(cbSourceLanguage.Text) Then
             tmpDBElement.Language = APIXML.ScraperLanguages.Languages.FirstOrDefault(Function(l) l.Description = cbSourceLanguage.Text).Abbreviation
             tmpDBElement.Movie.Language = tmpDBElement.Language
@@ -2317,29 +2363,6 @@ Public Class dlgEditMovie
                 tmpDBElement.Movie.Actors.Add(addActor)
             Next
         End If
-
-        If Path.GetExtension(tmpDBElement.Filename) = ".disc" Then
-            Dim StubFile As String = tmpDBElement.Filename
-            Dim Title As String = txtMediaStubTitle.Text
-            Dim Message As String = txtMediaStubMessage.Text
-            MediaStub.SaveDiscStub(StubFile, Title, Message)
-        End If
-
-        If Not Master.eSettings.MovieImagesNotSaveURLToNfo AndAlso pResults.Posters.Count > 0 Then tmpDBElement.Movie.Thumb = pResults.Posters
-        If Not Master.eSettings.MovieImagesNotSaveURLToNfo AndAlso fResults.Fanart.Thumb.Count > 0 Then tmpDBElement.Movie.Fanart = pResults.Fanart
-
-        Dim removeSubtitles As New List(Of MediaContainers.Subtitle)
-        For Each Subtitle In tmpDBElement.Subtitles
-            If Subtitle.ToRemove Then
-                removeSubtitles.Add(Subtitle)
-            End If
-        Next
-        For Each Subtitle In removeSubtitles
-            If File.Exists(Subtitle.SubsPath) Then
-                File.Delete(Subtitle.SubsPath)
-            End If
-            tmpDBElement.Subtitles.Remove(Subtitle)
-        Next
     End Sub
 
     Private Sub SetUp()
@@ -2457,6 +2480,13 @@ Public Class dlgEditMovie
 
     Private Sub tcEditMovie_SelectedIndexChanged(sender As Object, e As EventArgs) Handles tcEdit.SelectedIndexChanged
         lvSubtitles.SelectedItems.Clear()
+
+        If TypeOf tcEdit.SelectedTab.Tag Is Interfaces.MovieEditPanel.OnShowListener Then
+            Dim tmpDBElementClone = DirectCast(tmpDBElement.CloneDeep(), Database.DBElement)
+            SetDBElementInfo(tmpDBElementClone)
+            DirectCast(tcEdit.SelectedTab.Tag, Interfaces.MovieEditPanel.OnShowListener).OnShow(tmpDBElementClone)
+        End If
+
     End Sub
 
     Private Sub txtTop250_KeyPress(sender As Object, e As KeyPressEventArgs) Handles txtTop250.KeyPress
@@ -2499,6 +2529,17 @@ Public Class dlgEditMovie
                     RefreshExtrathumbs()
                 End If
             End If
+        ElseIf mType = Enums.ModuleEventType.ChangePosterDuringEdit_Movie Then
+            Dim fPath As String = _params(1).ToString
+            tmpDBElement.ImagesContainer.Poster.ImageOriginal.LoadFromFile(Path.Combine(Master.TempPath, fPath), True)
+            If tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image IsNot Nothing Then
+                pbPoster.Image = tmpDBElement.ImagesContainer.Poster.ImageOriginal.Image
+                pbPoster.Tag = tmpDBElement.ImagesContainer.Poster
+
+                lblPosterSize.Text = String.Format(Master.eLang.GetString(269, "Size: {0}x{1}"), pbPoster.Image.Width, pbPoster.Image.Height)
+                lblPosterSize.Visible = True
+            End If
+            ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.OnPosterChangedDuringEdit_Movie, Nothing, _params(0), False, tmpDBElement)
         End If
     End Sub
 

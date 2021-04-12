@@ -796,6 +796,39 @@ Public Class Enums
         ''' <remarks></remarks>
         ScraperSingle_TVSeason = 63
         DuringUpdateDB_TV = 64
+
+        ''' <summary>
+        ''' Called when MovieEditDialog is opening and the possible tabs are being populated.
+        ''' <para/>params: add an Interfaces.MovieEditPanel object, if you want the tab being shown
+        ''' </summary>
+        ''' <remarks></remarks>
+        EditorTabPopulate_Movie = 65
+
+        'TODO: Could we use OnPosterSave_Movie?
+        ''' <summary>
+        ''' Called when user selected a new poster
+        '''     <para/>singleobjekt: the module where the user started the change
+        '''     <para/>DBElement: the DBElement containing the new poster
+        ''' </summary>
+        ''' <remarks></remarks>
+        OnPosterChangedDuringEdit_Movie = 66
+
+        ''' <summary>
+        ''' Called by a module to refresh the editor with a new poster
+        '''     <para/>params(0): sender, the module where the user started the change
+        '''     <para/>params(1): filename of the new poster (stored in the Master.TempPath temp directory)
+        ''' </summary>
+        ''' <remarks></remarks>
+        ChangePosterDuringEdit_Movie = 67
+
+
+        ''' <summary>
+        ''' Called before a Movie is saving to the database
+        '''     <para/>DBElement: the DBElement being saved
+        '''     <para/>params: bToNFO, bToDisk, bDoSync, bForceFileCleanup
+        ''' </summary>
+        ''' <remarks></remarks>
+        OnBeforeSave_Movie = 68
     End Enum
 
     Public Enum MovieBannerSize As Integer

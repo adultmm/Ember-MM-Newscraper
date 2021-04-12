@@ -229,6 +229,9 @@ Public Class frmMain
 
     Delegate Sub MySettingsShow(ByVal dlg As dlgSettings)
 
+    Delegate Sub Delegate_RefreshRow_Movie(ByVal MovieID As Long)
+
+
 #End Region 'Delegates
 
 #Region "Properties"
@@ -15471,6 +15474,11 @@ Public Class frmMain
     ''' <param name="MovieID"></param>
     ''' <remarks></remarks>
     Private Sub RefreshRow_Movie(ByVal MovieID As Long)
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_RefreshRow_Movie(AddressOf RefreshRow_Movie), {MovieID})
+            Return
+        End If
+
         Dim myDelegate As New Delegate_dtListUpdateRow(AddressOf dtListUpdateRow)
         Dim newDRow As DataRow = Nothing
         Dim newTable As New DataTable

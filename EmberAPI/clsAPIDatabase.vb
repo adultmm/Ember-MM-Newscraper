@@ -4006,6 +4006,9 @@ Public Class Database
     Public Function Save_Movie(ByVal _movieDB As DBElement, ByVal bBatchMode As Boolean, ByVal bToNFO As Boolean, ByVal bToDisk As Boolean, ByVal bDoSync As Boolean, ByVal bForceFileCleanup As Boolean) As DBElement
         If _movieDB.Movie Is Nothing Then Return _movieDB
 
+        Dim params = New List(Of Object)(New Object() {bToNFO, bToDisk, bDoSync, bForceFileCleanup})
+        ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.OnBeforeSave_Movie, params, Nothing, False, _movieDB)
+
         Dim SQLtransaction As SQLiteTransaction = Nothing
         If Not bBatchMode Then SQLtransaction = _myvideosDBConn.BeginTransaction()
         Using SQLcommand_movie As SQLiteCommand = _myvideosDBConn.CreateCommand()

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PosterTemplate xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <CropEnabled>true</CropEnabled>
+  <Image>
+    <Filename>test-overlay.png</Filename>
+    <HorizontalAlignment>Stretch</HorizontalAlignment>
+    <VerticalAlignment>Bottom</VerticalAlignment>
+    <WidthPercent>50</WidthPercent>
+    <Enabled>true</Enabled>
+  </Image>
+  <PosterRatio>
+    <Ratio>1.5</Ratio>
+    <RatioLabel>Default 2:3</RatioLabel>
+  </PosterRatio>
+  <BackgroundColor>Black</BackgroundColor>
+</PosterTemplate>
