@@ -206,6 +206,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ApplicationEvents.vb" />
+    <Compile Include="AutoCompleteBehavior.vb" />
     <Compile Include="clsTheming.vb" />
     <Compile Include="dlgAbout.Designer.vb">
       <DependentUpon>dlgAbout.vb</DependentUpon>
