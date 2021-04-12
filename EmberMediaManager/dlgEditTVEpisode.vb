@@ -1064,7 +1064,7 @@ Public Class dlgEditTVEpisode
         Try
             With ofdImage
                 .InitialDirectory = Directory.GetParent(tmpDBElement.Filename).FullName
-                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
                 .FilterIndex = 4
             End With
 
@@ -1138,7 +1138,7 @@ Public Class dlgEditTVEpisode
         Try
             With ofdImage
                 .InitialDirectory = Directory.GetParent(tmpDBElement.Filename).FullName
-                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
                 .FilterIndex = 0
             End With
 

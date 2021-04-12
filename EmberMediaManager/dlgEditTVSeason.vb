@@ -140,7 +140,7 @@ Public Class dlgEditTVSeason
     Private Sub btnSetBannerLocal_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSetBannerLocal.Click
         With ofdImage
             .InitialDirectory = tmpDBElement.ShowPath
-            .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+            .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
             .FilterIndex = 0
         End With
 
@@ -210,7 +210,7 @@ Public Class dlgEditTVSeason
     Private Sub btnSetFanartLocal_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSetFanartLocal.Click
         With ofdImage
             .InitialDirectory = tmpDBElement.ShowPath
-            .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+            .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
             .FilterIndex = 4
         End With
 
@@ -280,7 +280,7 @@ Public Class dlgEditTVSeason
     Private Sub btnSetLandscapeLocal_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSetLandscapeLocal.Click
         With ofdImage
             .InitialDirectory = tmpDBElement.ShowPath
-            .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+            .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
             .FilterIndex = 0
         End With
 
@@ -350,7 +350,7 @@ Public Class dlgEditTVSeason
     Private Sub btnSetPosterLocal_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSetPosterLocal.Click
         With ofdImage
             .InitialDirectory = tmpDBElement.ShowPath
-            .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+            .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
             .FilterIndex = 0
         End With
 
