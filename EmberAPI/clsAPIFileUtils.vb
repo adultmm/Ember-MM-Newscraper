@@ -724,7 +724,114 @@ Namespace FileUtils
             End If
         End Function
 
+        'FIXME: doc
+        Public Shared Function ResolveReparsePoints(ByVal strPath As String) As String
+            Dim Output As String = Nothing
+
+            If Run_Process("fsutil", String.Format("reparsepoint query ""{0}""", strPath), True, Output, True) Then
+                Dim re = New Regex("Substitute Name:\s+\\\?\?\\([^\r\n]*)\r?\n?$", RegexOptions.Multiline)
+
+                Dim m As Match = re.Match(Output)
+                If m.Success Then
+                    'MsgBox(String.Format("Path: '{0}' -> '{1}'", strPath, m.Groups(1)))
+                    Return m.Groups(1).ToString
+                End If
+            End If
+
+            Return Nothing
+        End Function
+
+        'FIXME: doc
+        Public Shared Function IsAscendantOrTheSamePath(ByVal strPath As String, ByVal strPrefix As String) As Boolean
+            If String.IsNullOrEmpty(strPath) OrElse String.IsNullOrEmpty(strPrefix) Then
+                Return False
+            End If
+
+            strPath = strPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+            If strPath.Chars(strPath.Length - 1) <> Path.DirectorySeparatorChar Then
+                strPath += Path.DirectorySeparatorChar
+            End If
+
+            strPrefix = strPrefix.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+            If strPrefix.Chars(strPrefix.Length - 1) <> Path.DirectorySeparatorChar Then
+                strPrefix += Path.DirectorySeparatorChar
+            End If
+
+            Return strPath.StartsWith(strPrefix)
+        End Function
+
 #End Region 'Methods
+
+#Region " Run Process Function "
+
+        ' [ Run Process Function ]
+        '
+        ' // By Elektro H@cker
+        '
+        ' Examples :
+        '
+        ' MsgBox(Run_Process("Process.exe")) 
+        ' MsgBox(Run_Process("Process.exe", "Arguments"))
+        ' MsgBox(Run_Process("CMD.exe", "/C Dir /B", True))
+        ' MsgBox(Run_Process("CMD.exe", "/C @Echo OFF & For /L %X in (0,1,50000) Do (Echo %X)", False, False))
+        ' MsgBox(Run_Process("CMD.exe", "/C Dir /B /S %SYSTEMDRIVE%\*", , False, 500))
+        ' If Run_Process("CMD.exe", "/C Dir /B", True).Contains("File.txt") Then MsgBox("File found")
+
+        Private Shared Function Run_Process(ByVal Process_Name As String,
+                             Optional Process_Arguments As String = Nothing,
+                             Optional ByRef Read_Output As Boolean = False,
+                             Optional ByRef Output As String = Nothing,
+                             Optional Process_Hide As Boolean = False,
+                             Optional Process_TimeOut As Integer = 999999999) As Boolean
+
+            ' Returns True if "Read_Output" argument is False and Process was finished OK
+            ' Returns False if ExitCode is not "0"
+            ' Returns Nothing if process can't be found or can't be started
+            ' Returns "ErrorOutput" or "StandardOutput" (In that priority) if Read_Output argument is set to True.
+
+            Try
+
+                Dim My_Process As New Process()
+                Dim My_Process_Info As New ProcessStartInfo()
+
+                My_Process_Info.FileName = Process_Name ' Process filename
+                My_Process_Info.Arguments = Process_Arguments ' Process arguments
+                My_Process_Info.CreateNoWindow = Process_Hide ' Show or hide the process Window
+                My_Process_Info.UseShellExecute = False ' Don't use system shell to execute the process
+                My_Process_Info.RedirectStandardOutput = Read_Output '  Redirect (1) Output
+                My_Process_Info.RedirectStandardError = Read_Output ' Redirect non (1) Output
+                My_Process.EnableRaisingEvents = True ' Raise events
+                My_Process.StartInfo = My_Process_Info
+                My_Process.Start() ' Run the process NOW
+
+                My_Process.WaitForExit(Process_TimeOut) ' Wait X ms to kill the process (Default value is 999999999 ms which is 277 Hours)
+
+                Dim ERRORLEVEL = My_Process.ExitCode ' Stores the ExitCode of the process
+                If Not ERRORLEVEL = 0 Then Return False ' Returns the Exitcode if is not 0
+
+                If Read_Output Then
+                    Dim Process_ErrorOutput As String = My_Process.StandardError.ReadToEnd() ' Stores the Error Output (If any)
+                    Dim Process_StandardOutput As String = My_Process.StandardOutput.ReadToEnd() ' Stores the Standard Output (If any)
+                    ' Return output by priority
+                    If Not String.IsNullOrEmpty(Process_ErrorOutput) Then
+                        Output = Process_ErrorOutput ' Returns the ErrorOutput (if any)
+                        Return False
+                    Else
+                        Output = Process_StandardOutput
+                        Return True ' Returns the StandardOutput (if any)
+                    End If
+                End If
+
+            Catch ex As Exception
+                'MsgBox(ex.Message)
+                Return Nothing ' Returns nothing if the process can't be found or started.
+            End Try
+
+            Return True ' Returns True if Read_Output argument is set to False and the process finished without errors.
+
+        End Function
+
+#End Region
 
     End Class
 
