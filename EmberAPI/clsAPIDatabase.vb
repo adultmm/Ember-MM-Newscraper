@@ -5792,6 +5792,60 @@ Public Class Database
         End Try
     End Function
 
+    ''' <summary>
+    ''' Find for Actors whose names contain the given string
+    ''' </summary>
+    ''' <param name="exprs">The string to find in Actors' name</param>
+    ''' <returns>List of matcehd Actors as MediaContainers.Person. Only the ID and Name fields will be populated.</returns>
+    Public Function FindActors(expr As String) As List(Of MediaContainers.Person)
+        Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
+            SQLcommand.CommandText = String.Concat("SELECT A.idActor, A.strActor FROM actors AS A ",
+                                                   "WHERE A.strActor LIKE  (?) ",
+                                                   "ORDER BY A.strActor;")
+            Dim parExpression As SQLiteParameter = SQLcommand.Parameters.Add("parExpression", DbType.String, 0, "Expression")
+            parExpression.Value = "%" + expr + "%"
+
+            Dim result As List(Of MediaContainers.Person) = New List(Of MediaContainers.Person)
+            Using SQLreader As SQLiteDataReader = SQLcommand.ExecuteReader()
+                Dim actor As MediaContainers.Person
+                While SQLreader.Read
+                    actor = New MediaContainers.Person
+                    actor.ID = Convert.ToInt64(SQLreader("idActor"))
+                    actor.Name = SQLreader("strActor").ToString
+                    result.Add(actor)
+                End While
+            End Using
+            Return result
+        End Using
+    End Function
+
+    ''' <summary>
+    ''' Load the Actor from DB with the given id.
+    ''' </summary>
+    ''' <param name="id">The Actor's id</param>
+    ''' <returns>The Actor as MediaContainers.Person or Nothing if it doesn't exist. 
+    ''' Only the ID, Name and URLOriginal fields will be populated.</returns>
+    Public Function LoadActor(id As Long) As MediaContainers.Person
+        Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
+            SQLcommand.CommandText = String.Concat("SELECT A.idActor, A.strActor, A.strThumb FROM actors AS A ",
+                                                   "WHERE A.idActor = (?);")
+            Dim parActorID As SQLiteParameter = SQLcommand.Parameters.Add("parActorID", DbType.Int64, 0, "ActorID")
+            parActorID.Value = id
+
+            Using SQLreader As SQLiteDataReader = SQLcommand.ExecuteReader()
+                Dim actor As MediaContainers.Person
+                While SQLreader.Read
+                    actor = New MediaContainers.Person
+                    actor.ID = Convert.ToInt64(SQLreader("idActor"))
+                    actor.Name = SQLreader("strActor").ToString
+                    actor.URLOriginal = SQLreader("strThumb").ToString
+                    Return actor
+                End While
+                Return Nothing
+            End Using
+        End Using
+    End Function
+
 #End Region 'Methods
 
 #Region "Nested Types"

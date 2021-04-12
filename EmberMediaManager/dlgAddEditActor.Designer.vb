@@ -26,7 +26,6 @@ Partial Class dlgAddEditActor
         Me.tblBottom = New System.Windows.Forms.TableLayoutPanel()
         Me.btnOK = New System.Windows.Forms.Button()
         Me.btnCancel = New System.Windows.Forms.Button()
-        Me.txtName = New System.Windows.Forms.TextBox()
         Me.txtRole = New System.Windows.Forms.TextBox()
         Me.txtThumb = New System.Windows.Forms.TextBox()
         Me.lblName = New System.Windows.Forms.Label()
@@ -37,6 +36,7 @@ Partial Class dlgAddEditActor
         Me.btnVerify = New System.Windows.Forms.Button()
         Me.bwDownloadPic = New System.ComponentModel.BackgroundWorker()
         Me.pnlMain = New System.Windows.Forms.Panel()
+        Me.cbName = New System.Windows.Forms.ComboBox()
         Me.pnlBottom = New System.Windows.Forms.Panel()
         Me.tblBottom.SuspendLayout()
         CType(Me.pbActLoad, System.ComponentModel.ISupportInitialize).BeginInit()
@@ -83,14 +83,6 @@ Partial Class dlgAddEditActor
         Me.btnCancel.Size = New System.Drawing.Size(67, 23)
         Me.btnCancel.TabIndex = 1
         Me.btnCancel.Text = "Cancel"
-        '
-        'txtName
-        '
-        Me.txtName.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
-        Me.txtName.Location = New System.Drawing.Point(10, 22)
-        Me.txtName.Name = "txtName"
-        Me.txtName.Size = New System.Drawing.Size(174, 22)
-        Me.txtName.TabIndex = 1
         '
         'txtRole
         '
@@ -175,6 +167,7 @@ Partial Class dlgAddEditActor
         'pnlMain
         '
         Me.pnlMain.BackColor = System.Drawing.Color.White
+        Me.pnlMain.Controls.Add(Me.cbName)
         Me.pnlMain.Controls.Add(Me.btnVerify)
         Me.pnlMain.Controls.Add(Me.pbActLoad)
         Me.pnlMain.Controls.Add(Me.pbActors)
@@ -183,12 +176,19 @@ Partial Class dlgAddEditActor
         Me.pnlMain.Controls.Add(Me.lblName)
         Me.pnlMain.Controls.Add(Me.txtThumb)
         Me.pnlMain.Controls.Add(Me.txtRole)
-        Me.pnlMain.Controls.Add(Me.txtName)
         Me.pnlMain.Dock = System.Windows.Forms.DockStyle.Fill
         Me.pnlMain.Location = New System.Drawing.Point(0, 0)
         Me.pnlMain.Name = "pnlMain"
         Me.pnlMain.Size = New System.Drawing.Size(394, 245)
         Me.pnlMain.TabIndex = 1
+        '
+        'cbName
+        '
+        Me.cbName.FormattingEnabled = True
+        Me.cbName.Location = New System.Drawing.Point(10, 22)
+        Me.cbName.Name = "cbName"
+        Me.cbName.Size = New System.Drawing.Size(174, 21)
+        Me.cbName.TabIndex = 1
         '
         'pnlBottom
         '
@@ -233,7 +233,6 @@ Partial Class dlgAddEditActor
     Friend WithEvents tblBottom As System.Windows.Forms.TableLayoutPanel
     Friend WithEvents btnOK As System.Windows.Forms.Button
     Friend WithEvents btnCancel As System.Windows.Forms.Button
-    Friend WithEvents txtName As System.Windows.Forms.TextBox
     Friend WithEvents txtRole As System.Windows.Forms.TextBox
     Friend WithEvents txtThumb As System.Windows.Forms.TextBox
     Friend WithEvents lblName As System.Windows.Forms.Label
@@ -245,5 +244,5 @@ Partial Class dlgAddEditActor
     Friend WithEvents bwDownloadPic As System.ComponentModel.BackgroundWorker
     Friend WithEvents pnlMain As System.Windows.Forms.Panel
     Friend WithEvents pnlBottom As System.Windows.Forms.Panel
-
+    Friend WithEvents cbName As ComboBox
 End Class
