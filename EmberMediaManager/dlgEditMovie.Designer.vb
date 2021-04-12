@@ -223,8 +223,6 @@ Partial Class dlgEditMovie
         Me.txtLastPlayed = New System.Windows.Forms.TextBox()
         Me.cbSourceLanguage = New System.Windows.Forms.ComboBox()
         Me.lblLanguage = New System.Windows.Forms.Label()
-        Me.tpPosterEditor = New System.Windows.Forms.TabPage()
-        Me.pnlPosterEditor = New System.Windows.Forms.Panel()
         Me.pnlTop.SuspendLayout()
         CType(Me.pbTopLogo, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.tcEdit.SuspendLayout()
@@ -266,7 +264,6 @@ Partial Class dlgEditMovie
         Me.tpMetaData.SuspendLayout()
         Me.tpMediaStub.SuspendLayout()
         Me.StatusStrip.SuspendLayout()
-        Me.tpPosterEditor.SuspendLayout()
         Me.SuspendLayout()
         '
         'OK_Button
@@ -356,7 +353,6 @@ Partial Class dlgEditMovie
         Me.tcEdit.Controls.Add(Me.tpTheme)
         Me.tcEdit.Controls.Add(Me.tpMetaData)
         Me.tcEdit.Controls.Add(Me.tpMediaStub)
-        Me.tcEdit.Controls.Add(Me.tpPosterEditor)
         Me.tcEdit.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
         Me.tcEdit.Location = New System.Drawing.Point(4, 70)
         Me.tcEdit.Name = "tcEdit"
@@ -2458,24 +2454,6 @@ Partial Class dlgEditMovie
         Me.lblLanguage.TabIndex = 75
         Me.lblLanguage.Text = "Language:"
         '
-        'tpPosterEditor
-        '
-        Me.tpPosterEditor.Controls.Add(Me.pnlPosterEditor)
-        Me.tpPosterEditor.Location = New System.Drawing.Point(4, 22)
-        Me.tpPosterEditor.Name = "tpPosterEditor"
-        Me.tpPosterEditor.Size = New System.Drawing.Size(996, 491)
-        Me.tpPosterEditor.TabIndex = 16
-        Me.tpPosterEditor.Text = "Poster Editor"
-        Me.tpPosterEditor.UseVisualStyleBackColor = True
-        '
-        'pnlPosterEditor
-        '
-        Me.pnlPosterEditor.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.pnlPosterEditor.Location = New System.Drawing.Point(0, 0)
-        Me.pnlPosterEditor.Name = "pnlPosterEditor"
-        Me.pnlPosterEditor.Size = New System.Drawing.Size(996, 491)
-        Me.pnlPosterEditor.TabIndex = 1
-        '
         'dlgEditMovie
         '
         Me.AcceptButton = Me.OK_Button
@@ -2550,7 +2528,6 @@ Partial Class dlgEditMovie
         Me.tpMediaStub.PerformLayout()
         Me.StatusStrip.ResumeLayout(False)
         Me.StatusStrip.PerformLayout()
-        Me.tpPosterEditor.ResumeLayout(False)
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -2752,6 +2729,4 @@ Partial Class dlgEditMovie
     Friend WithEvents txtLocalTheme As TextBox
     Friend WithEvents txtUserRating As TextBox
     Friend WithEvents lblUserRating As Label
-    Friend WithEvents tpPosterEditor As TabPage
-    Friend WithEvents pnlPosterEditor As Panel
 End Class
