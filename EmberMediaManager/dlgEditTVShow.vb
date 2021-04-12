@@ -341,7 +341,7 @@ Public Class dlgEditTVShow
         Try
             With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
-                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
                 .FilterIndex = 0
             End With
 
@@ -415,7 +415,7 @@ Public Class dlgEditTVShow
         Try
             With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
-                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
                 .FilterIndex = 0
             End With
 
@@ -529,7 +529,7 @@ Public Class dlgEditTVShow
         Try
             With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
-                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
                 .FilterIndex = 0
             End With
 
@@ -603,7 +603,7 @@ Public Class dlgEditTVShow
         Try
             With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
-                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
                 .FilterIndex = 0
             End With
 
@@ -677,7 +677,7 @@ Public Class dlgEditTVShow
         Try
             With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
-                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
                 .FilterIndex = 4
             End With
 
@@ -731,7 +731,7 @@ Public Class dlgEditTVShow
         Try
             With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
-                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
                 .FilterIndex = 0
             End With
 
@@ -825,7 +825,7 @@ Public Class dlgEditTVShow
         Try
             With ofdLocalFiles
                 .InitialDirectory = tmpDBElement.ShowPath
-                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.png"
+                .Filter = Master.eLang.GetString(497, "Images") + "|*.jpg;*.jpeg;*.png"
                 .FilterIndex = 0
             End With
 
