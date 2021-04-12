@@ -640,7 +640,7 @@ Public Class PosterTemplateHelper
         End Try
     End Sub
 
-    Public Shared Sub SafeDispose(disposables As List(Of IDisposable))
+    Public Shared Sub SafeDispose(ByRef disposables As List(Of IDisposable))
         If disposables Is Nothing Then
             Return
         End If
