@@ -191,6 +191,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="clsAPIProfiles.vb" />
+    <Compile Include="clsAPIProperties.vb" />
     <Compile Include="clsAPITaskManager.vb" />
     <Compile Include="clsAPICommon.vb" />
     <Compile Include="clsAPIDatabase.vb" />

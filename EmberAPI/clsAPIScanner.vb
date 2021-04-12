@@ -21,6 +21,7 @@
 Imports System.IO
 Imports System.Text.RegularExpressions
 Imports System.Windows.Forms
+Imports EmberAPI
 Imports NLog
 
 Public Class Scanner
@@ -1282,14 +1283,15 @@ Public Class Scanner
         Dim bdmvSingle As Boolean = False
         Dim tFile As String = String.Empty
         Dim autoCheck As Boolean = False
+        Dim isSingle As Boolean = sSource.IsSingle
 
         Try
             If Directory.Exists(Path.Combine(strPath, "VIDEO_TS")) Then
                 di = New DirectoryInfo(Path.Combine(strPath, "VIDEO_TS"))
-                sSource.IsSingle = True
+                isSingle = True
             ElseIf Directory.Exists(Path.Combine(strPath, String.Concat("BDMV", Path.DirectorySeparatorChar, "STREAM"))) Then
                 di = New DirectoryInfo(Path.Combine(strPath, String.Concat("BDMV", Path.DirectorySeparatorChar, "STREAM")))
-                sSource.IsSingle = True
+                isSingle = True
             Else
                 di = New DirectoryInfo(strPath)
                 autoCheck = True
@@ -1356,7 +1358,9 @@ Public Class Scanner
                              Not Regex.IsMatch(f.Name, AdvancedSettings.GetSetting("NotValidFileContains", "[^\w\s]\s?trailer|[^\w\s]\s?sample"), RegexOptions.IgnoreCase) AndAlso ((Master.eSettings.MovieSkipStackedSizeCheck AndAlso
                             FileUtils.Common.isStacked(f.FullName)) OrElse (Not Convert.ToInt32(Master.eSettings.MovieSkipLessThan) > 0 OrElse f.Length >= Master.eSettings.MovieSkipLessThan * 1048576))).OrderBy(Function(f) f.FullName)
 
-                    If tList.Count > 1 AndAlso sSource.IsSingle Then
+                    isSingle = EmberDirectoryOptions.GetInstance(sSource, di.FullName).GetIsSingle(isSingle)
+
+                    If tList.Count > 1 AndAlso isSingle Then
                         'check if we already have a movie from this folder
                         If MoviePaths.Where(Function(f) tList.Where(Function(l) FileUtils.Common.RemoveStackingMarkers(l.FullName).ToLower = f).Count > 0).Count > 0 Then
                             HasFile = True
@@ -1375,7 +1379,7 @@ Public Class Scanner
                                 End If
                                 fList.Add(lFile.FullName)
                             End If
-                            If sSource.IsSingle AndAlso Not SkipStack Then Exit For
+                            If isSingle AndAlso Not SkipStack Then Exit For
                             If bwPrelim.CancellationPending Then Return
                         Next
                     End If
@@ -1384,7 +1388,7 @@ Public Class Scanner
                         currMovieContainer = New Database.DBElement(Enums.ContentType.Movie)
                         currMovieContainer.ActorThumbs = New List(Of String)
                         currMovieContainer.Filename = s
-                        currMovieContainer.IsSingle = sSource.IsSingle
+                        currMovieContainer.IsSingle = isSingle
                         currMovieContainer.Language = sSource.Language
                         currMovieContainer.Source = sSource
                         currMovieContainer.Subtitles = New List(Of MediaContainers.Subtitle)
@@ -1766,7 +1770,8 @@ Public Class Scanner
                                     parID.Value = sSource.ID
                                     SQLUpdatecommand.ExecuteNonQuery()
                                     Try
-                                        If Master.eSettings.MovieSortBeforeScan OrElse sSource.IsSingle Then
+                                        If Master.eSettings.MovieSortBeforeScan OrElse EmberDirectoryOptions.GetInstance(sSource, SQLreader("strPath").ToString).GetIsSingle(sSource.IsSingle) Then
+                                            'TODO: Why is it not recursive?
                                             FileUtils.SortFiles(SQLreader("strPath").ToString)
                                         End If
                                     Catch ex As Exception
@@ -1925,6 +1930,114 @@ Public Class Scanner
 #End Region 'Properties
 
     End Class
+
+    Public Class EmberDirectoryOptions
+
+        Private Const OPTIONS_FILE_NAME As String = ".ember"
+        Private Shared ReadOnly DUMMY As EmberDirectoryOptions = New EmberDirectoryOptions()
+
+        Private optionsFilePath As String
+        Private ascendant As EmberDirectoryOptions
+        Private options As Properties
+
+        Public Shared Function GetInstance(sSource As Database.DBSource, strPath As String) As EmberDirectoryOptions
+            Dim fileOrDirectory = New DirectoryInfo(strPath)
+            Dim baseDir As DirectoryInfo
+            If (fileOrDirectory.Attributes And FileAttributes.Directory) = FileAttributes.Directory Then
+                baseDir = fileOrDirectory
+            Else
+                baseDir = fileOrDirectory.Parent
+            End If
+
+            Dim ascendant As EmberDirectoryOptions
+            If FileUtils.Common.IsRealAscendantPath(baseDir.FullName, sSource.Path) Then
+                ascendant = GetInstance(sSource, baseDir.Parent.FullName)
+            Else
+                ascendant = DUMMY
+            End If
+
+            Dim OptionsFilePath As String = Path.Combine(baseDir.FullName, OPTIONS_FILE_NAME)
+            If File.Exists(OptionsFilePath) Then
+                Return New EmberDirectoryOptions(OptionsFilePath, If(ascendant IsNot DUMMY, ascendant, Nothing))
+            Else
+                'DUMMY and real ascendant cases are OK
+                Return ascendant
+            End If
+
+        End Function
+
+        'just for DUMMY instance
+        Private Sub New()
+        End Sub
+
+        'it's hidden, use GetInstance() method for caching purposes
+        Private Sub New(optionsFilePath As String, ascendant As EmberDirectoryOptions)
+            Me.optionsFilePath = optionsFilePath
+            Me.ascendant = ascendant
+
+            If File.Exists(optionsFilePath) Then
+                Me.options = New Properties
+                Dim stream As Stream = Nothing
+                Try
+                    stream = New FileStream(optionsFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                    Me.options.Load(stream)
+                Catch ex As Exception
+                    logger.Error(String.Format("Cannot read Ember directory options from {0}, reason: {1}", optionsFilePath, ex.Message))
+                Finally
+                    FileUtils.Common.SafeClose(stream)
+                End Try
+            End If
+
+        End Sub
+
+        'FIXME: doc
+        Public ReadOnly Property IsSingle() As Boolean?
+            Get
+                Return GetBooleanProperty("isSingle", False, Nothing)
+            End Get
+        End Property
+
+        'FIXME: doc
+        Public Function GetIsSingle(defaultValue As Boolean) As Boolean
+            Return If(GetBooleanProperty("isSingle", True, Nothing), defaultValue)
+        End Function
+
+        Private Function GetProperty(key As String, Optional recursive As Boolean = False, Optional defaultValue As Boolean? = Nothing, Optional nothingValues As String() = Nothing) As String
+            Dim value As String
+            If Me.options IsNot Nothing Then
+                value = Me.options.GetProperty(key)
+            Else
+                value = Nothing
+            End If
+
+            If value Is Nothing OrElse (nothingValues IsNot Nothing AndAlso nothingValues.Contains(value, StringComparer.OrdinalIgnoreCase)) Then
+                If recursive And Me.ascendant IsNot Nothing Then
+                    Return Me.ascendant.GetProperty(key, True, defaultValue, nothingValues)
+                Else
+                    Return Nothing
+                End If
+            Else
+                Return value
+            End If
+        End Function
+
+        Private Function GetBooleanProperty(key As String, Optional recursive As Boolean = False, Optional defaultValue As Boolean? = Nothing) As Boolean?
+            Dim value = GetProperty(key, recursive, Nothing, {"", "none", "default", "nothing", "null"})
+            If value Is Nothing Then
+                Return defaultValue
+            End If
+            Dim lValue = value.ToLower
+            If {"true", "yes", "1", "on"}.Contains(lValue) Then
+                Return True
+            ElseIf {"false", "no", "0", "off"}.Contains(lValue) Then
+                Return False
+            Else
+                logger.Info("Illegal boolean value {0} for {1} key in options file: {2}", value, key, Me.optionsFilePath)
+                Return defaultValue
+            End If
+        End Function
+    End Class
+
 
 #End Region 'Nested Types
 

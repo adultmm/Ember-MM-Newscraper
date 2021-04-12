@@ -24,6 +24,7 @@ Imports System.Xml.Serialization
 Imports System.Data.SQLite
 Imports NLog
 Imports System.Text.RegularExpressions
+Imports EmberAPI.Scanner
 
 ''' <summary>
 ''' Class defining and implementing the interface to the database
@@ -501,7 +502,7 @@ Public Class Database
                                     If Not tSource.Recursive AndAlso tPath.Length > tSource.Path.Length AndAlso If(sPath = "video_ts" OrElse sPath = "bdmv", tPath.Substring(tSource.Path.Length).Trim(Path.DirectorySeparatorChar).Split(Path.DirectorySeparatorChar).Count > 2, tPath.Substring(tSource.Path.Length).Trim(Path.DirectorySeparatorChar).Split(Path.DirectorySeparatorChar).Count > 1) Then
                                         MoviePaths.Remove(SQLReader("MoviePath").ToString)
                                         Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
-                                    ElseIf Not Convert.ToBoolean(SQLReader("Type")) AndAlso tSource.IsSingle AndAlso Not MoviePaths.Where(Function(s) SQLReader("MoviePath").ToString.ToLower.StartsWith(tSource.Path.ToLower)).Count = 1 Then
+                                    ElseIf Not Convert.ToBoolean(SQLReader("Type")) AndAlso EmberDirectoryOptions.GetInstance(tSource, tPath).GetIsSingle(tSource.IsSingle) AndAlso Not MoviePaths.Where(Function(s) SQLReader("MoviePath").ToString.ToLower.StartsWith(tSource.Path.ToLower)).Count = 1 Then
                                         MoviePaths.Remove(SQLReader("MoviePath").ToString)
                                         Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
                                     End If

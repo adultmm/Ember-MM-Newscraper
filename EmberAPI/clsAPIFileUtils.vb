@@ -742,8 +742,8 @@ Namespace FileUtils
         End Function
 
         'FIXME: doc
-        Public Shared Function IsAscendantOrTheSamePath(ByVal strPath As String, ByVal strPrefix As String) As Boolean
-            If String.IsNullOrEmpty(strPath) OrElse String.IsNullOrEmpty(strPrefix) Then
+        Public Shared Function IsAscendantOrTheSamePath(ByVal strPath As String, ByVal strAscendantPath As String) As Boolean
+            If String.IsNullOrEmpty(strPath) OrElse String.IsNullOrEmpty(strAscendantPath) Then
                 Return False
             End If
 
@@ -752,13 +752,32 @@ Namespace FileUtils
                 strPath += Path.DirectorySeparatorChar
             End If
 
-            strPrefix = strPrefix.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
-            If strPrefix.Chars(strPrefix.Length - 1) <> Path.DirectorySeparatorChar Then
-                strPrefix += Path.DirectorySeparatorChar
+            strAscendantPath = strAscendantPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)
+            If strAscendantPath.Chars(strAscendantPath.Length - 1) <> Path.DirectorySeparatorChar Then
+                strAscendantPath += Path.DirectorySeparatorChar
             End If
 
-            Return strPath.StartsWith(strPrefix)
+            Return strPath.StartsWith(strAscendantPath)
         End Function
+
+        'FIXME: doc
+        Public Shared Function IsRealAscendantPath(ByVal strPath As String, ByVal strAscendantPath As String) As Boolean
+            Return IsAscendantOrTheSamePath(strPath, strAscendantPath) AndAlso strPath.Length > strAscendantPath.Length
+        End Function
+
+        ''' <summary>
+        ''' Try to close the given <c>Stream</c> and log the errors if any.
+        ''' </summary>
+        ''' <param name="stream"><c>Stream</c> stream to close</param>
+        Public Shared Sub SafeClose(stream As Stream)
+            If stream IsNot Nothing Then
+                Try
+                    stream.Close()
+                Catch ex As Exception
+                    logger.Warn(ex, "Cannot close stream: ", ex.Message)
+                End Try
+            End If
+        End Sub
 
 #End Region 'Methods
 
