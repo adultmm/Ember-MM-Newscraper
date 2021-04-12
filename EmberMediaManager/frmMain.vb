@@ -17830,7 +17830,9 @@ Public Class frmMain
 
         RemoveHandler cbSearchMovies.SelectedIndexChanged, AddressOf cbSearchMovies_SelectedIndexChanged
         cbSearchMovies.Items.Clear()
-        cbSearchMovies.Items.AddRange(New Object() {Master.eLang.GetString(21, "Title"), Master.eLang.GetString(302, "Original Title"), Master.eLang.GetString(100, "Actor"), Master.eLang.GetString(233, "Role"), Master.eLang.GetString(62, "Director"), Master.eLang.GetString(729, "Credits"), Master.eLang.GetString(301, "Country"), Master.eLang.GetString(395, "Studio")})
+        cbSearchMovies.Items.AddRange(New Object() {Master.eLang.GetString(21, "Title"), Master.eLang.GetString(302, "Original Title"), Master.eLang.GetString(100, "Actor"),
+            Master.eLang.GetString(233, "Role"), Master.eLang.GetString(62, "Director"), Master.eLang.GetString(729, "Credits"), Master.eLang.GetString(301, "Country"),
+            Master.eLang.GetString(395, "Studio"), Master.eLang.GetString(410, "Path")})
         If cbSearchMovies.Items.Count > 0 Then
             cbSearchMovies.SelectedIndex = 0
         End If
@@ -18260,6 +18262,9 @@ Public Class frmMain
                     FilterArray_Movies.Add(filSearch_Movies)
                 Case Master.eLang.GetString(395, "Studio")
                     filSearch_Movies = String.Concat("Studio LIKE '%", strTextSearch, "%'")
+                    FilterArray_Movies.Add(filSearch_Movies)
+                Case Master.eLang.GetString(410, "Path")
+                    filSearch_Movies = String.Concat("MoviePath LIKE '%", strTextSearch, "%'")
                     FilterArray_Movies.Add(filSearch_Movies)
             End Select
 
