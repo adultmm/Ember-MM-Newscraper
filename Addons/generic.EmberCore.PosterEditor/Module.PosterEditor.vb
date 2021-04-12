@@ -118,7 +118,7 @@ Public Class PosterEditor
     Public Function RunGeneric(ByVal mType As Enums.ModuleEventType, ByRef _params As List(Of Object), ByRef _singleobjekt As Object, ByRef _dbelement As Database.DBElement) As Interfaces.ModuleResult Implements Interfaces.GenericModule.RunGeneric
         Select Case mType
             Case Enums.ModuleEventType.PosterEditor_Movie
-                frmMoviePosterEditor = New frmMoviePosterEditor(_dbelement.Filename)
+                frmMoviePosterEditor = New frmMoviePosterEditor(_dbelement)
                 _params(0) = frmMoviePosterEditor.pnlMain
                 AddHandler frmMoviePosterEditor.GenericEvent, AddressOf Handle_GenericEvent
         End Select
