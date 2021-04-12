@@ -18,19 +18,33 @@
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
 
+Imports System.Drawing
 Imports System.IO
 Imports EmberAPI
+Imports NLog
 
 Public Class PosterEditor
     Implements Interfaces.GenericModule
 
 #Region "Fields"
 
+    Shared logger As Logger = NLog.LogManager.GetCurrentClassLogger()
+
+
+    'FIXME: !!! make these configurable
+    Friend Shared _saveUntouchedPosters As Boolean = True
+    'FIXME: it's too agressive (delete poster, it regenerates immediately; maybe after poster scrape?)
+    Friend Shared _autoGeneratePoster As Boolean = False
+    Friend Shared _autoGeneratePosterTemplatePath As String = Nothing
+    Friend Shared _autoGenerateWithDefaultTemplate As Boolean = False
+    Friend Shared _showTestTemplate As Boolean = True
+
+
     Private WithEvents MyMenu As New System.Windows.Forms.ToolStripMenuItem
     Private WithEvents MyTrayMenu As New System.Windows.Forms.ToolStripMenuItem
     Private _AssemblyName As String = String.Empty
     Private _enabled As Boolean = False
-    Private _name As String = "Frame Extractor"
+    Private _name As String = "Poster Editor"
     Private _setup As frmSettingsHolder
     '    Private frmTV As frmTVExtrator
     Private frmMoviePosterEditor As frmMoviePosterEditor
@@ -80,7 +94,8 @@ Public Class PosterEditor
 
     Public ReadOnly Property ModuleType() As List(Of Enums.ModuleEventType) Implements Interfaces.GenericModule.ModuleType
         Get
-            Return New List(Of Enums.ModuleEventType)(New Enums.ModuleEventType() {Enums.ModuleEventType.PosterEditor_Movie})
+            Return New List(Of Enums.ModuleEventType)(New Enums.ModuleEventType() {Enums.ModuleEventType.EditorTabPopulate_Movie, Enums.ModuleEventType.AfterEdit_Movie,
+                Enums.ModuleEventType.OnPosterChangedDuringEdit_Movie, Enums.ModuleEventType.OnBeforeSave_Movie})
         End Get
     End Property
 
@@ -104,7 +119,9 @@ Public Class PosterEditor
         _setup = New frmSettingsHolder
         _setup.cbEnabled.Checked = _enabled
         SPanel.Name = _name
+        'FIXME: new string
         SPanel.Text = Master.eLang.GetString(310, "Frame Extractor")
+        'FIXME: where is it used?
         SPanel.Prefix = "Extrator_"
         SPanel.Type = Master.eLang.GetString(802, "Modules")
         SPanel.ImageIndex = If(_enabled, 9, 10)
@@ -117,14 +134,61 @@ Public Class PosterEditor
 
     Public Function RunGeneric(ByVal mType As Enums.ModuleEventType, ByRef _params As List(Of Object), ByRef _singleobjekt As Object, ByRef _dbelement As Database.DBElement) As Interfaces.ModuleResult Implements Interfaces.GenericModule.RunGeneric
         Select Case mType
-            Case Enums.ModuleEventType.PosterEditor_Movie
-                frmMoviePosterEditor = New frmMoviePosterEditor(_dbelement)
-                _params(0) = frmMoviePosterEditor.pnlMain
-                AddHandler frmMoviePosterEditor.GenericEvent, AddressOf Handle_GenericEvent
+            Case Enums.ModuleEventType.EditorTabPopulate_Movie
+                'FIXME: test the disabled case
+                If Master.eSettings.MoviePosterAnyEnabled Then
+                    frmMoviePosterEditor = New frmMoviePosterEditor(Me)
+                    frmMoviePosterEditor.Init(_dbelement)
+                    _params.Add(frmMoviePosterEditor)
+                End If
+            Case Enums.ModuleEventType.AfterEdit_Movie, Enums.ModuleEventType.OnBeforeSave_Movie
+                If mType = Enums.ModuleEventType.OnBeforeSave_Movie AndAlso Not DirectCast(_params(1), Boolean) Then
+                    Return New Interfaces.ModuleResult
+                End If
+                If _dbelement.ImagesContainer.Poster.LoadAndCache(Enums.ContentType.Movie, True) Then
+                    If ExifHelper.HasExifInfo(_dbelement.ImagesContainer.Poster.ImageOriginal.Image) Then
+                        If _saveUntouchedPosters Then
+                            Dim untouchedTmpPath As String = PosterTemplateHelper.GetUntouchedPosterTempPath(_dbelement)
+                            If File.Exists(untouchedTmpPath) Then
+                                File.Copy(untouchedTmpPath, PosterTemplateHelper.GetUntouchedPathForMovie(_dbelement, Path.GetExtension(untouchedTmpPath)))
+                            Else
+                                logger.Error("Untouched poster not found in temp folder: {0}, for movie: {1}", untouchedTmpPath, _dbelement.Filename)
+                            End If
+                        End If
+                    Else
+                        AutoGeneratePoster(_dbelement)
+                    End If
+                Else
+                    AutoGeneratePoster(_dbelement)
+                End If
+            Case Enums.ModuleEventType.OnPosterChangedDuringEdit_Movie
+                If TypeOf _singleobjekt IsNot frmMoviePosterEditor Then
+                    If frmMoviePosterEditor IsNot Nothing Then
+                        frmMoviePosterEditor.OnPosterChangedDuringEdit(_dbelement)
+                    End If
+                End If
         End Select
     End Function
 
-    Sub Handle_GenericEvent(ByVal mType As Enums.ModuleEventType, ByRef _params As List(Of Object))
+    Private Shared Function AutoGeneratePoster(_dbelement As Database.DBElement) As Boolean
+        If _autoGeneratePoster AndAlso Not ExifHelper.HasExifInfo(_dbelement.ImagesContainer.Poster.ImageOriginal.Image) Then
+            Dim foundTemplate = PosterTemplateHelper.DetectTemplate(_dbelement, True)
+            If foundTemplate IsNot Nothing Then
+                Dim newPoster As Image = Nothing
+                Try
+                    newPoster = PosterTemplateHelper.ApplyTemplateToPoster(_dbelement, foundTemplate, True, False)
+                    _dbelement.ImagesContainer.Poster.ImageOriginal.UpdateMSfromImg(newPoster)
+                    Return True
+                Finally
+                    PosterTemplateHelper.SafeDispose(newPoster)
+                End Try
+            End If
+        End If
+        Return False
+    End Function
+
+    'Forms (of our module) can use this method to raise GenericEvents
+    Sub RaiseGenericEvent(ByVal mType As Enums.ModuleEventType, ByRef _params As List(Of Object))
         RaiseEvent GenericEvent(mType, _params)
     End Sub
 

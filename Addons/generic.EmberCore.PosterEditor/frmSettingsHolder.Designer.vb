@@ -1,9 +1,9 @@
-﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
+﻿<Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()>
 Partial Class frmSettingsHolder
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
-    <System.Diagnostics.DebuggerNonUserCode()> _
+    <System.Diagnostics.DebuggerNonUserCode()>
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
         Try
             If disposing AndAlso components IsNot Nothing Then
@@ -20,15 +20,15 @@ Partial Class frmSettingsHolder
     'NOTE: The following procedure is required by the Windows Form Designer
     'It can be modified using the Windows Form Designer.  
     'Do not modify it using the code editor.
-    <System.Diagnostics.DebuggerStepThrough()> _
+    <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
         Me.pnlSettingsTop = New System.Windows.Forms.Panel()
+        Me.tblSettingsTop = New System.Windows.Forms.TableLayoutPanel()
         Me.cbEnabled = New System.Windows.Forms.CheckBox()
         Me.pnlSettings = New System.Windows.Forms.Panel()
-        Me.tblSettingsTop = New System.Windows.Forms.TableLayoutPanel()
         Me.pnlSettingsTop.SuspendLayout()
-        Me.pnlSettings.SuspendLayout()
         Me.tblSettingsTop.SuspendLayout()
+        Me.pnlSettings.SuspendLayout()
         Me.SuspendLayout()
         '
         'pnlSettingsTop
@@ -41,6 +41,24 @@ Partial Class frmSettingsHolder
         Me.pnlSettingsTop.Name = "pnlSettingsTop"
         Me.pnlSettingsTop.Size = New System.Drawing.Size(384, 23)
         Me.pnlSettingsTop.TabIndex = 0
+        '
+        'tblSettingsTop
+        '
+        Me.tblSettingsTop.AutoScroll = True
+        Me.tblSettingsTop.AutoSize = True
+        Me.tblSettingsTop.ColumnCount = 2
+        Me.tblSettingsTop.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
+        Me.tblSettingsTop.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
+        Me.tblSettingsTop.Controls.Add(Me.cbEnabled, 0, 0)
+        Me.tblSettingsTop.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.tblSettingsTop.Location = New System.Drawing.Point(0, 0)
+        Me.tblSettingsTop.Name = "tblSettingsTop"
+        Me.tblSettingsTop.Padding = New System.Windows.Forms.Padding(5, 0, 0, 0)
+        Me.tblSettingsTop.RowCount = 2
+        Me.tblSettingsTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.tblSettingsTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.tblSettingsTop.Size = New System.Drawing.Size(384, 23)
+        Me.tblSettingsTop.TabIndex = 1
         '
         'cbEnabled
         '
@@ -62,24 +80,6 @@ Partial Class frmSettingsHolder
         Me.pnlSettings.Size = New System.Drawing.Size(384, 261)
         Me.pnlSettings.TabIndex = 0
         '
-        'tblSettingsTop
-        '
-        Me.tblSettingsTop.AutoScroll = True
-        Me.tblSettingsTop.AutoSize = True
-        Me.tblSettingsTop.ColumnCount = 2
-        Me.tblSettingsTop.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
-        Me.tblSettingsTop.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
-        Me.tblSettingsTop.Controls.Add(Me.cbEnabled, 0, 0)
-        Me.tblSettingsTop.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.tblSettingsTop.Location = New System.Drawing.Point(0, 0)
-        Me.tblSettingsTop.Name = "tblSettingsTop"
-        Me.tblSettingsTop.Padding = New System.Windows.Forms.Padding(5, 0, 0, 0)
-        Me.tblSettingsTop.RowCount = 2
-        Me.tblSettingsTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.tblSettingsTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.tblSettingsTop.Size = New System.Drawing.Size(384, 23)
-        Me.tblSettingsTop.TabIndex = 1
-        '
         'frmSettingsHolder
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(96.0!, 96.0!)
@@ -98,10 +98,10 @@ Partial Class frmSettingsHolder
         Me.Text = "frmSettingsHolder"
         Me.pnlSettingsTop.ResumeLayout(False)
         Me.pnlSettingsTop.PerformLayout()
-        Me.pnlSettings.ResumeLayout(False)
-        Me.pnlSettings.PerformLayout()
         Me.tblSettingsTop.ResumeLayout(False)
         Me.tblSettingsTop.PerformLayout()
+        Me.pnlSettings.ResumeLayout(False)
+        Me.pnlSettings.PerformLayout()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -110,5 +110,4 @@ Partial Class frmSettingsHolder
     Friend WithEvents cbEnabled As System.Windows.Forms.CheckBox
     Friend WithEvents pnlSettings As System.Windows.Forms.Panel
     Friend WithEvents tblSettingsTop As System.Windows.Forms.TableLayoutPanel
-
 End Class
