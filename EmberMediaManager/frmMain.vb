@@ -10473,6 +10473,8 @@ Public Class frmMain
             End If
 
             If fScanner.IsBusy Then fScanner.Cancel()
+            RemoveHandler fScanner.ProgressUpdate, AddressOf ScannerProgressUpdate
+
             If bwLoadImages_Movie.IsBusy Then bwLoadImages_Movie.CancelAsync()
             If bwLoadImages_MovieSet.IsBusy Then bwLoadImages_MovieSet.CancelAsync()
             If bwLoadImages_MovieSetMoviePosters.IsBusy Then bwLoadImages_MovieSetMoviePosters.CancelAsync()
@@ -15399,10 +15401,10 @@ Public Class frmMain
             newRow = newTable.Rows.Item(0)
         End If
 
-        Dim dRow = dtMovies.NewRow()
-        dRow.ItemArray = newRow.ItemArray
-
         If newRow IsNot Nothing Then
+            Dim dRow = dtMovies.NewRow()
+            dRow.ItemArray = newRow.ItemArray
+
             RemoveHandler dgvMovies.CellEnter, AddressOf dgvMovies_CellEnter
             If InvokeRequired Then
                 Invoke(myDelegate, New Object() {dtMovies, dRow})

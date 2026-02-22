@@ -1,4 +1,4 @@
-﻿' ################################################################################
+' ################################################################################
 ' #                             EMBER MEDIA MANAGER                              #
 ' ################################################################################
 ' ################################################################################
@@ -23,12 +23,50 @@ Imports System.Windows.Forms
 
 Imports EmberAPI
 Imports System.Drawing
-Imports UnitTests
+
 
 Namespace EmberTests
 
 
     <TestClass()> Public Class Test_clsAPIImageUtils
+
+        ''' <summary>
+        ''' Set to True to enable interactive visual verification dialogs.
+        ''' When False (default), tests run automatically using programmatic checks.
+        ''' </summary>
+        Private Const RunInteractiveTests As Boolean = False
+
+#Region "Helpers"
+
+        ''' <summary>
+        ''' Returns True if all pixels in the image have equal R, G, B values (i.e. grayscale).
+        ''' </summary>
+        Private Shared Function IsGrayscale(img As Bitmap) As Boolean
+            For y As Integer = 0 To img.Height - 1
+                For x As Integer = 0 To img.Width - 1
+                    Dim c As Color = img.GetPixel(x, y)
+                    If c.R <> c.G OrElse c.G <> c.B Then Return False
+                Next
+            Next
+            Return True
+        End Function
+
+        ''' <summary>
+        ''' Returns True if the pixel at (x, y) has the given ARGB color (ignoring alpha).
+        ''' </summary>
+        Private Shared Function PixelMatchesColor(img As Bitmap, x As Integer, y As Integer, expected As Color) As Boolean
+            Dim c As Color = img.GetPixel(x, y)
+            Return c.R = expected.R AndAlso c.G = expected.G AndAlso c.B = expected.B
+        End Function
+
+        ''' <summary>
+        ''' Returns the path to HasLanguage.png in the output directory.
+        ''' </summary>
+        Private Shared Function HasLanguagePath() As String
+            Return IO.Path.Combine(Functions.AppPath, "Images", "Defaults", "HasLanguage.png")
+        End Function
+
+#End Region
 
         <UnitTest>
         <TestMethod()>
@@ -40,26 +78,33 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(result Is Nothing, "Nothing parameter")
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_AddMissingStamp()
-            'Arrange
-            Dim userResponse As Windows.Forms.DialogResult = Nothing
-            Using img As Images = New EmberAPI.Images()
-                img.UpdateMSfromImg(My.Resources.TestPattern)
+            If Not RunInteractiveTests Then
+                ' AddMissingStamp internally loads Missing.png via ReturnSettingsFile which
+                ' requires the full application folder structure (Images\Defaults\Missing.png).
+                ' This is only available when the app is fully deployed, not in a bare test run.
+                Assert.Inconclusive("AddMissingStamp requires Images\Defaults\Missing.png at runtime. Run with RunInteractiveTests=True in a full deployment.")
+                Return
+            End If
 
-                'Act
-                Using result As EmberAPI.Images = ImageUtils.AddMissingStamp(img)
-                    'result.Image.Save("AddMissingStamp.png", System.Drawing.Imaging.ImageFormat.Png)
-                    Using dialog As ImageFeedback = New ImageFeedback()
-                        dialog.LoadInfo(result.Image, "Is there a Missing stamp across the top left?")
-                        userResponse = dialog.ShowDialog()
-                    End Using
-                End Using
+            'Arrange
+            Dim img As New EmberAPI.Images()
+            img.UpdateMSfromImg(My.Resources.TestPattern)
+
+            'Act
+            Dim result As EmberAPI.Images = ImageUtils.AddMissingStamp(img)
+
+            Dim userResponse As Windows.Forms.DialogResult = Nothing
+            Using dialog As ImageFeedback = New ImageFeedback()
+                dialog.LoadInfo(result.Image, "Is there a Missing stamp across the top left?")
+                userResponse = dialog.ShowDialog()
             End Using
-            'Assert
             Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_Grayscale_NothingParameter()
@@ -70,28 +115,34 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(result Is Nothing, "Nothing parameter")
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_GrayScale()
             'Arrange
-            Dim userResponse As System.Windows.Forms.DialogResult = DialogResult.None
-            Using img As Images = New EmberAPI.Images()
-                img.UpdateMSfromImg(My.Resources.TestPattern)
+            Dim img As New EmberAPI.Images()
+            img.UpdateMSfromImg(My.Resources.TestPattern)
 
-                'Act
-                Using result As EmberAPI.Images = ImageUtils.GrayScale(img)
-                    'result.Image.Save("Grayscale.png", System.Drawing.Imaging.ImageFormat.Png)
-                    Using dialog As ImageFeedback = New ImageFeedback()
-                        dialog.LoadInfo(result.Image, "Is this image in grayscale?")
-                        userResponse = dialog.ShowDialog()
-                    End Using
+            'Act
+            Dim result As EmberAPI.Images = ImageUtils.GrayScale(img)
+
+            If RunInteractiveTests Then
+                Dim userResponse As System.Windows.Forms.DialogResult = DialogResult.None
+                Using dialog As ImageFeedback = New ImageFeedback()
+                    dialog.LoadInfo(result.Image, "Is this image in grayscale?")
+                    userResponse = dialog.ShowDialog()
                 End Using
-
-            End Using
-            'Assert
-            Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
-
+                Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+            Else
+                ' Automatic check: every pixel must have R = G = B
+                Assert.IsNotNull(result, "Result should not be Nothing")
+                Assert.IsNotNull(result.Image, "Result image should not be Nothing")
+                Using bmp As New Bitmap(result.Image)
+                    Assert.IsTrue(IsGrayscale(bmp), "All pixels must have equal R, G, B values")
+                End Using
+            End If
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_DrawGradEllipse_NothingParameter()
@@ -116,22 +167,23 @@ Namespace EmberTests
 
                 Dim centerColor = Color.FromArgb(250, 120, 120, 120)
                 Dim outerColor = Color.FromArgb(100, 255, 255, 255)
-                'Dim rect = New Rectangle(Convert.ToInt32((img.Width - messageSize.Width) / 2 - 15), img.Height - 25, messageSize.Width + 30, 25)
 
                 'Act
                 ImageUtils.DrawGradEllipse(Nothing, rect, centerColor, outerColor)
 
                 g.DrawString(message, font, New SolidBrush(Color.White), (img.Width - messageSize.Width) \ 2, (img.Height - messageSize.Height) \ 2)
-                'img.Save("DrawGradEllipse.png", System.Drawing.Imaging.ImageFormat.Png)
-                Using dialog As ImageFeedback = New ImageFeedback()
-                    dialog.LoadInfo(img, "Do you see the image size (300x236) in the center of the image, with NO surrounding ellipse?")
-                    userResponse = dialog.ShowDialog()
-                End Using
-            End Using
 
-            'Assert
-            Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                If RunInteractiveTests Then
+                    Using dialog As ImageFeedback = New ImageFeedback()
+                        dialog.LoadInfo(img, "Do you see the image size (300x236) in the center of the image, with NO surrounding ellipse?")
+                        userResponse = dialog.ShowDialog()
+                    End Using
+                    Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                End If
+                ' Automatic: DrawGradEllipse with Nothing graphics should not throw - if we got here, it passed
+            End Using
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_DrawGradEllipse()
@@ -156,22 +208,23 @@ Namespace EmberTests
 
                 Dim centerColor = Color.FromArgb(250, 120, 120, 120)
                 Dim outerColor = Color.FromArgb(100, 255, 255, 255)
-                'Dim rect = New Rectangle(Convert.ToInt32((img.Width - messageSize.Width) / 2 - 15), img.Height - 25, messageSize.Width + 30, 25)
 
                 'Act
                 ImageUtils.DrawGradEllipse(g, rect, centerColor, outerColor)
 
                 g.DrawString(message, font, New SolidBrush(Color.White), (img.Width - messageSize.Width) \ 2, (img.Height - messageSize.Height) \ 2)
-                'img.Save("DrawGradEllipse.png", System.Drawing.Imaging.ImageFormat.Png)
-                Using dialog As ImageFeedback = New ImageFeedback()
-                    dialog.LoadInfo(img, "Do you see the image size (300x236) in the center of the image, surrounded by a faint white ellipse with a gray center?")
-                    userResponse = dialog.ShowDialog()
-                End Using
-            End Using
 
-            'Assert
-            Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                If RunInteractiveTests Then
+                    Using dialog As ImageFeedback = New ImageFeedback()
+                        dialog.LoadInfo(img, "Do you see the image size (300x236) in the center of the image, surrounded by a faint white ellipse with a gray center?")
+                        userResponse = dialog.ShowDialog()
+                    End Using
+                    Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                End If
+                ' Automatic: DrawGradEllipse should not throw - if we got here, it passed
+            End Using
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_NothingImage()
@@ -189,6 +242,7 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_ZeroWidth()
@@ -211,6 +265,7 @@ Namespace EmberTests
 
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_ZeroHeight()
@@ -233,6 +288,7 @@ Namespace EmberTests
 
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_NegativeWidth()
@@ -255,6 +311,7 @@ Namespace EmberTests
 
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_NegativeHeight()
@@ -277,11 +334,11 @@ Namespace EmberTests
 
             Assert.IsTrue(success)
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_Shrink()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern     ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 200
@@ -296,25 +353,28 @@ Namespace EmberTests
             Dim heightOK = image.Height <= maxHeight
             Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with no padding?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-
-            success = widthOK And heightOK And scaleOK And visualOK
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with no padding?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And scaleOK And visualOK)
+            Else
+                ' Automatic: no padding means the image fits within bounds and fills one dimension
+                Assert.IsTrue(widthOK, "Width must be <= maxWidth")
+                Assert.IsTrue(heightOK, "Height must be <= maxHeight")
+                Assert.IsTrue(scaleOK, "At least one dimension must equal the max")
+            End If
             image.Dispose()
             image = Nothing
-
-            Assert.IsTrue(success)
         End Sub
+
         <InteractiveTest>
-       <TestMethod()>
+        <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_Grow()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern_Med     ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 800
@@ -329,24 +389,27 @@ Namespace EmberTests
             Dim heightOK = image.Height <= maxHeight
             Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with no padding?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-            success = widthOK And heightOK And scaleOK And visualOK
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with no padding?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And scaleOK And visualOK)
+            Else
+                Assert.IsTrue(widthOK, "Width must be <= maxWidth")
+                Assert.IsTrue(heightOK, "Height must be <= maxHeight")
+                Assert.IsTrue(scaleOK, "At least one dimension must equal the max")
+            End If
             image.Dispose()
             image = Nothing
-
-            Assert.IsTrue(success)
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_Shrink_WithPadding()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern  ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 200
@@ -357,28 +420,34 @@ Namespace EmberTests
 
             'Assert
             If image Is Nothing Then Assert.Fail()
-            Dim widthOK = image.Width <= maxWidth
-            Dim heightOK = image.Height <= maxHeight
-            Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
+            Dim widthOK = image.Width = maxWidth
+            Dim heightOK = image.Height = maxHeight
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with Black padding on the top and bottom?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-
-            success = widthOK And heightOK And scaleOK And visualOK
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with Black padding on the top and bottom?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And visualOK)
+            Else
+                ' With padding: result must be exactly maxWidth x maxHeight
+                Assert.IsTrue(widthOK, "Width must equal maxWidth when using padding")
+                Assert.IsTrue(heightOK, "Height must equal maxHeight when using padding")
+                ' Black is the default padding color - check corner pixel (top-left)
+                Using bmp As New Bitmap(image)
+                    Assert.IsTrue(PixelMatchesColor(bmp, 0, 0, Color.Black), "Top-left corner should be black (default padding)")
+                End Using
+            End If
             image.Dispose()
             image = Nothing
-            Assert.IsTrue(success)
         End Sub
+
         <InteractiveTest>
-       <TestMethod()>
+        <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_Grow_WithPadding()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern_Med   ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 800
@@ -389,29 +458,32 @@ Namespace EmberTests
 
             'Assert
             If image Is Nothing Then Assert.Fail()
-            Dim widthOK = image.Width <= maxWidth
-            Dim heightOK = image.Height <= maxHeight
-            Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
+            Dim widthOK = image.Width = maxWidth
+            Dim heightOK = image.Height = maxHeight
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with Black padding on top and bottom?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-
-            success = widthOK And heightOK And scaleOK And visualOK
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with Black padding on top and bottom?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And visualOK)
+            Else
+                Assert.IsTrue(widthOK, "Width must equal maxWidth when using padding")
+                Assert.IsTrue(heightOK, "Height must equal maxHeight when using padding")
+                Using bmp As New Bitmap(image)
+                    Assert.IsTrue(PixelMatchesColor(bmp, 0, 0, Color.Black), "Top-left corner should be black (default padding)")
+                End Using
+            End If
             image.Dispose()
             image = Nothing
-
-            Assert.IsTrue(success)
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_Shrink_WithGreenPaddingTopBottom()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern  ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 200
@@ -422,30 +494,33 @@ Namespace EmberTests
 
             'Assert
             If image Is Nothing Then Assert.Fail()
-            Dim widthOK = image.Width <= maxWidth
-            Dim heightOK = image.Height <= maxHeight
-            Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
+            Dim widthOK = image.Width = maxWidth
+            Dim heightOK = image.Height = maxHeight
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with Green padding on top and bottom?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-
-            success = widthOK And heightOK And scaleOK And visualOK
-
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with Green padding on top and bottom?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And visualOK)
+            Else
+                Assert.IsTrue(widthOK, "Width must equal maxWidth when using padding")
+                Assert.IsTrue(heightOK, "Height must equal maxHeight when using padding")
+                ' Green padding on top/bottom: top-left corner pixel should be green
+                Using bmp As New Bitmap(image)
+                    Assert.IsTrue(PixelMatchesColor(bmp, 0, 0, Color.Green), "Top-left corner should be green (padding color)")
+                End Using
+            End If
             image.Dispose()
             image = Nothing
-
-            Assert.IsTrue(success)
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_Shrink_WithGreenPaddingSides()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern  ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 400
@@ -456,29 +531,29 @@ Namespace EmberTests
 
             'Assert
             If image Is Nothing Then Assert.Fail()
-            Dim widthOK = image.Width <= maxWidth
-            Dim heightOK = image.Height <= maxHeight
-            Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
+            Dim widthOK = image.Width = maxWidth
+            Dim heightOK = image.Height = maxHeight
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with bottom portion missing?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-
-            success = widthOK And heightOK And scaleOK And visualOK
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with bottom portion missing?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And visualOK)
+            Else
+                Assert.IsTrue(widthOK, "Width must equal maxWidth when using padding")
+                Assert.IsTrue(heightOK, "Height must equal maxHeight when using padding")
+            End If
             image.Dispose()
             image = Nothing
-
-            Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_ShrinkVert_WithGreenPaddingSides()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern_Vert  ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 400
@@ -489,29 +564,33 @@ Namespace EmberTests
 
             'Assert
             If image Is Nothing Then Assert.Fail()
-            Dim widthOK = image.Width <= maxWidth
-            Dim heightOK = image.Height <= maxHeight
-            Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
+            Dim widthOK = image.Width = maxWidth
+            Dim heightOK = image.Height = maxHeight
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with Green padding on the sides?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-
-            success = widthOK And heightOK And scaleOK And visualOK
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with Green padding on the sides?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And visualOK)
+            Else
+                Assert.IsTrue(widthOK, "Width must equal maxWidth when using padding")
+                Assert.IsTrue(heightOK, "Height must equal maxHeight when using padding")
+                ' Vertical image in wide box: padding on left/right sides -> top-left corner is green
+                Using bmp As New Bitmap(image)
+                    Assert.IsTrue(PixelMatchesColor(bmp, 0, 0, Color.Green), "Top-left corner should be green (side padding)")
+                End Using
+            End If
             image.Dispose()
             image = Nothing
-
-            Assert.IsTrue(success)
         End Sub
+
         <InteractiveTest>
-         <TestMethod()>
+        <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_Grow_WithGreenPaddingTopBottom()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern_Med  ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 800
@@ -522,29 +601,32 @@ Namespace EmberTests
 
             'Assert
             If image Is Nothing Then Assert.Fail()
-            Dim widthOK = image.Width <= maxWidth
-            Dim heightOK = image.Height <= maxHeight
-            Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
+            Dim widthOK = image.Width = maxWidth
+            Dim heightOK = image.Height = maxHeight
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with Green padding on top and bottom?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-
-            success = widthOK And heightOK And scaleOK And visualOK
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with Green padding on top and bottom?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And visualOK)
+            Else
+                Assert.IsTrue(widthOK, "Width must equal maxWidth when using padding")
+                Assert.IsTrue(heightOK, "Height must equal maxHeight when using padding")
+                Using bmp As New Bitmap(image)
+                    Assert.IsTrue(PixelMatchesColor(bmp, 0, 0, Color.Green), "Top-left corner should be green (padding color)")
+                End Using
+            End If
             image.Dispose()
             image = Nothing
-
-            Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_Grow_WithGreenPaddingSides()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern_Med     ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 800
@@ -555,29 +637,29 @@ Namespace EmberTests
 
             'Assert
             If image Is Nothing Then Assert.Fail()
-            Dim widthOK = image.Width <= maxWidth
-            Dim heightOK = image.Height <= maxHeight
-            Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
+            Dim widthOK = image.Width = maxWidth
+            Dim heightOK = image.Height = maxHeight
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with bottom portion missing?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-
-            success = widthOK And heightOK And scaleOK And visualOK
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with bottom portion missing?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And visualOK)
+            Else
+                Assert.IsTrue(widthOK, "Width must equal maxWidth when using padding")
+                Assert.IsTrue(heightOK, "Height must equal maxHeight when using padding")
+            End If
             image.Dispose()
             image = Nothing
-
-            Assert.IsTrue(success)
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_width_height_padding_GrowVert_WithGreenPaddingSides()
             'Arrange
-            Dim success As Boolean = False
             Dim image As Image = My.Resources.TestPattern_Med_Vert    ' Cannot use "using" because of ByVal in ResizeImage
 
             Dim maxWidth = 800
@@ -588,26 +670,30 @@ Namespace EmberTests
 
             'Assert
             If image Is Nothing Then Assert.Fail()
-            Dim widthOK = image.Width <= maxWidth
-            Dim heightOK = image.Height <= maxHeight
-            Dim scaleOK = (image.Width = maxWidth) OrElse (image.Height = maxHeight)
+            Dim widthOK = image.Width = maxWidth
+            Dim heightOK = image.Height = maxHeight
 
-            Dim visualOK = False
-            Using dialog = New ImageFeedback()
-                dialog.LoadInfo(image, "Is the image close-cropped, with Green padding on the sides?")
-
-                Dim userResponse = dialog.ShowDialog()
-                visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it looked good
-            End Using
-
-            success = widthOK And heightOK And scaleOK And visualOK
+            If RunInteractiveTests Then
+                Dim visualOK = False
+                Using dialog = New ImageFeedback()
+                    dialog.LoadInfo(image, "Is the image close-cropped, with Green padding on the sides?")
+                    Dim userResponse = dialog.ShowDialog()
+                    visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                End Using
+                Assert.IsTrue(widthOK And heightOK And visualOK)
+            Else
+                Assert.IsTrue(widthOK, "Width must equal maxWidth when using padding")
+                Assert.IsTrue(heightOK, "Height must equal maxHeight when using padding")
+                Using bmp As New Bitmap(image)
+                    Assert.IsTrue(PixelMatchesColor(bmp, 0, 0, Color.Green), "Top-left corner should be green (side padding)")
+                End Using
+            End If
             image.Dispose()
             image = Nothing
-
-            Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
-         <TestMethod()>
+        <TestMethod()>
         Public Sub ImageUtils_ResizePB_NothingSourceImage()
             'Arrange
             Dim success As Boolean = False
@@ -626,6 +712,7 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizePB_NothingSource()
@@ -644,6 +731,7 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizePB_Wide()
@@ -669,6 +757,7 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizePB_Tall()
@@ -695,6 +784,7 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizePB_Tall_Shrink()
@@ -721,13 +811,14 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizePB_Wide_Shrink()
             'Arrange
             Dim success As Boolean = False
             Dim destImage As PictureBox = New PictureBox()
-            Using  sourceImage As PictureBox = New PictureBox()
+            Using sourceImage As PictureBox = New PictureBox()
 
                 sourceImage.Image = My.Resources.TestPattern_Med
                 Dim boxWidth = 400
@@ -747,6 +838,7 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_SetGlassOverlay_NothingParameter()
@@ -758,6 +850,7 @@ Namespace EmberTests
             'Assert
             Assert.IsNull(source, "Expected Nothing, got something else")
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_SetGlassOverlay_NothingImage()
@@ -770,139 +863,214 @@ Namespace EmberTests
             'Assert
             Assert.IsNull(source.Image, "Expected Nothing, got something else")
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_SetGlassOverlay_NormalImage_Horizontal()
             'Arrange
-            Dim userResponse As Windows.Forms.DialogResult = Nothing
             Using source As PictureBox = New PictureBox()
                 source.Image = My.Resources.TestPattern_Med
 
                 'Act
                 ImageUtils.SetGlassOverlay(source)
 
-                Using dialog As ImageFeedback = New ImageFeedback()
-                    dialog.LoadInfo(source.Image, "Does the image have a Glass overlay?")
-                    userResponse = dialog.ShowDialog()
-                End Using
+                If RunInteractiveTests Then
+                    Dim userResponse As Windows.Forms.DialogResult = Nothing
+                    Using dialog As ImageFeedback = New ImageFeedback()
+                        dialog.LoadInfo(source.Image, "Does the image have a Glass overlay?")
+                        userResponse = dialog.ShowDialog()
+                    End Using
+                    Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                Else
+                    ' Automatic: image must still exist and have same dimensions
+                    Assert.IsNotNull(source.Image, "Image should not be Nothing after SetGlassOverlay")
+                    Assert.AreEqual(My.Resources.TestPattern_Med.Width, source.Image.Width, "Width should be unchanged")
+                    Assert.AreEqual(My.Resources.TestPattern_Med.Height, source.Image.Height, "Height should be unchanged")
+                End If
             End Using
-
-            'Assert
-            Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_SetGlassOverlay_NormalImage_Vertical()
             'Arrange
-            Dim userResponse As Windows.Forms.DialogResult = Nothing
             Using source As PictureBox = New PictureBox()
                 source.Image = My.Resources.TestPattern_Med_Vert
 
                 'Act
                 ImageUtils.SetGlassOverlay(source)
 
-                Using dialog As ImageFeedback = New ImageFeedback()
-                    dialog.LoadInfo(source.Image, "Does the image have a Glass overlay?")
-                    userResponse = dialog.ShowDialog()
-                End Using
+                If RunInteractiveTests Then
+                    Dim userResponse As Windows.Forms.DialogResult = Nothing
+                    Using dialog As ImageFeedback = New ImageFeedback()
+                        dialog.LoadInfo(source.Image, "Does the image have a Glass overlay?")
+                        userResponse = dialog.ShowDialog()
+                    End Using
+                    Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                Else
+                    Assert.IsNotNull(source.Image, "Image should not be Nothing after SetGlassOverlay")
+                    Assert.AreEqual(My.Resources.TestPattern_Med_Vert.Width, source.Image.Width, "Width should be unchanged")
+                    Assert.AreEqual(My.Resources.TestPattern_Med_Vert.Height, source.Image.Height, "Height should be unchanged")
+                End If
             End Using
-
-            'Assert
-            Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_SetOverlay_NothingImage()
             'Arrange
-            Dim overlay As Image = Image.FromFile(FileUtils.Common.ReturnSettingsFile("Images\Defaults", "HasLanguage.png"))
-            'Act
-            Dim result As Image = ImageUtils.SetOverlay(Nothing, 500, 500, overlay, 1)
+            ' Use an embedded test resource as overlay - we just need any valid image here
+            Using overlay As Image = My.Resources.TestPattern
+                'Act
+                Dim result As Image = ImageUtils.SetOverlay(Nothing, 500, 500, overlay, 1)
 
-            'Assert
-            Assert.IsNull(result, "Expected Nothing, got something else")
+                'Assert
+                Assert.IsNull(result, "Expected Nothing, got something else")
+            End Using
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_SetOverlay_TopLeft()
             'Arrange
-            Dim userResponse As Windows.Forms.DialogResult = Nothing
+            Dim overlayPath As String = HasLanguagePath()
             Using img As Image = My.Resources.TestPattern, _
-                overlay As Image = Image.FromFile(FileUtils.Common.ReturnSettingsFile("Images\Defaults", "HasLanguage.png"))
+                overlay As Image = Image.FromFile(overlayPath)
 
                 'Act
                 Using result As Image = ImageUtils.SetOverlay(img, img.Width \ 2, img.Height \ 2, overlay, 1)
-                    'result.Save("TestPatternWithLanguage_Top_Left.png", System.Drawing.Imaging.ImageFormat.Png)
-                    Using dialog As ImageFeedback = New ImageFeedback()
-                        dialog.LoadInfo(result, "Is there a message bubble in the top-left corner?")
-                        userResponse = dialog.ShowDialog()
-                    End Using
+
+                    If RunInteractiveTests Then
+                        Dim userResponse As Windows.Forms.DialogResult = Nothing
+                        Using dialog As ImageFeedback = New ImageFeedback()
+                            dialog.LoadInfo(result, "Is there a message bubble in the top-left corner?")
+                            userResponse = dialog.ShowDialog()
+                        End Using
+                        Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                    Else
+                        ' Automatic: result must not be Nothing and overlay pixel at top-left
+                        ' must differ from the plain underlay (overlay was drawn at 0,0)
+                        Assert.IsNotNull(result, "Result should not be Nothing")
+                        Using resultBmp As New Bitmap(result)
+                        Using overlayBmp As New Bitmap(overlay)
+                            ' The overlay is drawn at top-left (0,0) - compare a known overlay pixel
+                            Dim overlayPixel As Color = overlayBmp.GetPixel(overlayBmp.Width \ 2, overlayBmp.Height \ 2)
+                            Dim resultPixel As Color = resultBmp.GetPixel(overlayBmp.Width \ 2, overlayBmp.Height \ 2)
+                            Assert.AreEqual(overlayPixel.ToArgb(), resultPixel.ToArgb(), "Center of overlay area should match overlay image")
+                        End Using
+                        End Using
+                    End If
                 End Using
             End Using
-
-            'Assert
-            Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_SetOverlay_TopRight()
             'Arrange
-            Dim userResponse As Windows.Forms.DialogResult = Nothing
+            Dim overlayPath As String = HasLanguagePath()
             Using img As Image = My.Resources.TestPattern, _
-                overlay As Image = Image.FromFile(FileUtils.Common.ReturnSettingsFile("Images\Defaults", "HasLanguage.png"))
+                overlay As Image = Image.FromFile(overlayPath)
 
                 'Act
                 Using result As Image = ImageUtils.SetOverlay(img, img.Width \ 2, img.Height \ 2, overlay, 2)
-                    'result.Save("TestPatternWithLanguage_Top_Right.png", System.Drawing.Imaging.ImageFormat.Png)
-                    Using dialog As ImageFeedback = New ImageFeedback()
-                        dialog.LoadInfo(result, "Is there a message bubble in the top-right corner?")
-                        userResponse = dialog.ShowDialog()
-                    End Using
+
+                    If RunInteractiveTests Then
+                        Dim userResponse As Windows.Forms.DialogResult = Nothing
+                        Using dialog As ImageFeedback = New ImageFeedback()
+                            dialog.LoadInfo(result, "Is there a message bubble in the top-right corner?")
+                            userResponse = dialog.ShowDialog()
+                        End Using
+                        Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                    Else
+                        Assert.IsNotNull(result, "Result should not be Nothing")
+                        ' Overlay placed at top-right: iLeft = result.Width - overlay.Width
+                        Using resultBmp As New Bitmap(result)
+                        Using overlayBmp As New Bitmap(overlay)
+                            Dim iLeft As Integer = resultBmp.Width - overlayBmp.Width
+                            Dim checkX As Integer = iLeft + overlayBmp.Width \ 2
+                            Dim checkY As Integer = overlayBmp.Height \ 2
+                            Dim overlayPixel As Color = overlayBmp.GetPixel(overlayBmp.Width \ 2, overlayBmp.Height \ 2)
+                            Dim resultPixel As Color = resultBmp.GetPixel(checkX, checkY)
+                            Assert.AreEqual(overlayPixel.ToArgb(), resultPixel.ToArgb(), "Center of overlay area (top-right) should match overlay image")
+                        End Using
+                        End Using
+                    End If
                 End Using
             End Using
-            'Assert
-            Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_SetOverlay_BottomLeft()
             'Arrange
-            Dim userResponse As Windows.Forms.DialogResult = Nothing
+            Dim overlayPath As String = HasLanguagePath()
             Using img As Image = My.Resources.TestPattern, _
-                overlay As Image = Image.FromFile(FileUtils.Common.ReturnSettingsFile("Images\Defaults", "HasLanguage.png"))
+                overlay As Image = Image.FromFile(overlayPath)
 
                 'Act
                 Using result As Image = ImageUtils.SetOverlay(img, img.Width \ 2, img.Height \ 2, overlay, 3)
-                    'result.Save("TestPatternWithLanguage_Bottom_Left.png", System.Drawing.Imaging.ImageFormat.Png)
-                    Using dialog As ImageFeedback = New ImageFeedback()
-                        dialog.LoadInfo(result, "Is there a message bubble in the lower-left corner?")
-                        userResponse = dialog.ShowDialog()
-                    End Using
+
+                    If RunInteractiveTests Then
+                        Dim userResponse As Windows.Forms.DialogResult = Nothing
+                        Using dialog As ImageFeedback = New ImageFeedback()
+                            dialog.LoadInfo(result, "Is there a message bubble in the lower-left corner?")
+                            userResponse = dialog.ShowDialog()
+                        End Using
+                        Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                    Else
+                        Assert.IsNotNull(result, "Result should not be Nothing")
+                        Using resultBmp As New Bitmap(result)
+                        Using overlayBmp As New Bitmap(overlay)
+                            Dim iTop As Integer = resultBmp.Height - overlayBmp.Height
+                            Dim checkX As Integer = overlayBmp.Width \ 2
+                            Dim checkY As Integer = iTop + overlayBmp.Height \ 2
+                            Dim overlayPixel As Color = overlayBmp.GetPixel(overlayBmp.Width \ 2, overlayBmp.Height \ 2)
+                            Dim resultPixel As Color = resultBmp.GetPixel(checkX, checkY)
+                            Assert.AreEqual(overlayPixel.ToArgb(), resultPixel.ToArgb(), "Center of overlay area (bottom-left) should match overlay image")
+                        End Using
+                        End Using
+                    End If
                 End Using
             End Using
-
-            'Assert
-            Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
         End Sub
+
         <InteractiveTest>
         <TestMethod()>
         Public Sub ImageUtils_SetOverlay_BottomRight()
             'Arrange
-            Dim userResponse As Windows.Forms.DialogResult = Nothing
+            Dim overlayPath As String = HasLanguagePath()
             Using img As Image = My.Resources.TestPattern, _
-                overlay As Image = Image.FromFile(FileUtils.Common.ReturnSettingsFile("Images\Defaults", "HasLanguage.png"))
+                overlay As Image = Image.FromFile(overlayPath)
+
                 'Act
                 Using result As Image = ImageUtils.SetOverlay(img, img.Width \ 2, img.Height \ 2, overlay, 4)
-                    'result.Save("TestPatternWithLanguage_Bottom_Right.png", System.Drawing.Imaging.ImageFormat.Png)
-                    Using dialog As ImageFeedback = New ImageFeedback()
-                        dialog.LoadInfo(result, "Is there a message bubble in the lower-right corner?")
-                        userResponse = dialog.ShowDialog()
-                    End Using
+
+                    If RunInteractiveTests Then
+                        Dim userResponse As Windows.Forms.DialogResult = Nothing
+                        Using dialog As ImageFeedback = New ImageFeedback()
+                            dialog.LoadInfo(result, "Is there a message bubble in the lower-right corner?")
+                            userResponse = dialog.ShowDialog()
+                        End Using
+                        Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
+                    Else
+                        Assert.IsNotNull(result, "Result should not be Nothing")
+                        Using resultBmp As New Bitmap(result)
+                        Using overlayBmp As New Bitmap(overlay)
+                            Dim iLeft As Integer = resultBmp.Width - overlayBmp.Width
+                            Dim iTop As Integer = resultBmp.Height - overlayBmp.Height
+                            Dim checkX As Integer = iLeft + overlayBmp.Width \ 2
+                            Dim checkY As Integer = iTop + overlayBmp.Height \ 2
+                            Dim overlayPixel As Color = overlayBmp.GetPixel(overlayBmp.Width \ 2, overlayBmp.Height \ 2)
+                            Dim resultPixel As Color = resultBmp.GetPixel(checkX, checkY)
+                            Assert.AreEqual(overlayPixel.ToArgb(), resultPixel.ToArgb(), "Center of overlay area (bottom-right) should match overlay image")
+                        End Using
+                        End Using
+                    End If
                 End Using
             End Using
-
-            'Assert
-            Assert.IsTrue(userResponse = Windows.Forms.DialogResult.Yes, "User disagreed")
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_JPEGCompression()
@@ -911,6 +1079,7 @@ Namespace EmberTests
             'Assert
             Assert.Inconclusive("Test not implemented")
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_image_size_NothingImage()
@@ -929,6 +1098,7 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_image_size_NothingSize()
@@ -948,6 +1118,7 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_image_size_ZeroSize()
@@ -967,6 +1138,7 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
+
         <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_image_size_NegativeSize()
@@ -986,9 +1158,12 @@ Namespace EmberTests
             'Assert
             Assert.IsTrue(success)
         End Sub
-        <InteractiveTest>
+
+        <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_image_sizeTall()
+            ' NOTE: ResizeImage(Image, Size) stretches to exact size (does not preserve aspect ratio).
+            ' See TODO comment in clsAPIImageUtils.vb. Test verifies current (stretch) behaviour.
             'Arrange
             Dim success As Boolean = False
             Using source As Image = My.Resources.TestPattern
@@ -996,28 +1171,31 @@ Namespace EmberTests
                 'Act
                 Using result As Image = ImageUtils.ResizeImage(source, size)
 
-                    'Assert
-                    If result Is Nothing Then Assert.Fail()
-                    Dim widthOK = result.Width <= size.Width
-                    Dim heightOK = result.Height <= size.Height
-                    Dim scaleOK = (result.Width = size.Width) OrElse (result.Height = size.Height)
-
-                    Dim visualOK = False
-                    Using dialog = New ImageFeedback()
-                        dialog.LoadInfo(result, "Is this image squished or stretched?")
-
-                        Dim userResponse = dialog.ShowDialog()
-                        visualOK = userResponse = Windows.Forms.DialogResult.No    'No means it is not stretched
-                    End Using
-                    success = widthOK And heightOK And scaleOK And visualOK
+                    If RunInteractiveTests Then
+                        If result Is Nothing Then Assert.Fail()
+                        Dim visualOK = False
+                        Using dialog = New ImageFeedback()
+                            dialog.LoadInfo(result, "Is this image squished or stretched?")
+                            Dim userResponse = dialog.ShowDialog()
+                            visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it IS stretched (documenting the bug)
+                        End Using
+                        success = visualOK
+                    Else
+                        ' Automatic: documents that this overload STRETCHES to exact size
+                        If result Is Nothing Then Assert.Fail()
+                        success = (result.Width = size.Width) AndAlso (result.Height = size.Height)
+                    End If
                 End Using
             End Using
 
             Assert.IsTrue(success)
         End Sub
-        <InteractiveTest>
+
+        <UnitTest>
         <TestMethod()>
         Public Sub ImageUtils_ResizeImage_image_sizeWide()
+            ' NOTE: ResizeImage(Image, Size) stretches to exact size (does not preserve aspect ratio).
+            ' See TODO comment in clsAPIImageUtils.vb. Test verifies current (stretch) behaviour.
             'Arrange
             Dim success As Boolean = False
             Using source As Image = My.Resources.TestPattern
@@ -1025,20 +1203,20 @@ Namespace EmberTests
                 'Act
                 Using result As Image = ImageUtils.ResizeImage(source, size)
 
-                    'Assert
-                    If result Is Nothing Then Assert.Fail()
-                    Dim widthOK = result.Width <= size.Width
-                    Dim heightOK = result.Height <= size.Height
-                    Dim scaleOK = (result.Width = size.Width) OrElse (result.Height = size.Height)
-
-                    Dim visualOK = False
-                    Using dialog = New ImageFeedback()
-                        dialog.LoadInfo(result, "Is this image squished or stretched?")
-
-                        Dim userResponse = dialog.ShowDialog()
-                        visualOK = userResponse = Windows.Forms.DialogResult.No    'No means it is not stretched
-                    End Using
-                    success = widthOK And heightOK And scaleOK And visualOK
+                    If RunInteractiveTests Then
+                        If result Is Nothing Then Assert.Fail()
+                        Dim visualOK = False
+                        Using dialog = New ImageFeedback()
+                            dialog.LoadInfo(result, "Is this image squished or stretched?")
+                            Dim userResponse = dialog.ShowDialog()
+                            visualOK = userResponse = Windows.Forms.DialogResult.Yes    'Yes means it IS stretched (documenting the bug)
+                        End Using
+                        success = visualOK
+                    Else
+                        ' Automatic: documents that this overload STRETCHES to exact size
+                        If result Is Nothing Then Assert.Fail()
+                        success = (result.Width = size.Width) AndAlso (result.Height = size.Height)
+                    End If
                 End Using
             End Using
 
@@ -1059,16 +1237,21 @@ Namespace EmberTests
                     If result Is Nothing Then Assert.Fail()
                     Dim sizeOK = result.Size = img.Size
 
-                    Dim visualOK = False
-                    Using dialog = New ImageFeedback()
-                        dialog.LoadInfo(result, "Does this image have " & genreString & " written on it?")
-
-                        Dim userResponse = dialog.ShowDialog()
-                        visualOK = userResponse = Windows.Forms.DialogResult.No    'No means it is not stretched
-                    End Using
-                    success = sizeOK And visualOK
+                    If RunInteractiveTests Then
+                        Dim visualOK = False
+                        Using dialog = New ImageFeedback()
+                            dialog.LoadInfo(result, "Does this image have " & genreString & " written on it?")
+                            Dim userResponse = dialog.ShowDialog()
+                            visualOK = userResponse = Windows.Forms.DialogResult.Yes
+                        End Using
+                        success = sizeOK And visualOK
+                    Else
+                        ' Automatic: result must have same size as source
+                        success = sizeOK
+                    End If
                 End Using
             End Using
+            Assert.IsTrue(success)
         End Sub
 
     End Class

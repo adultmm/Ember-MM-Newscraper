@@ -316,6 +316,18 @@ Public Class HTTP
             If StringUtils.isValidURL(_URL) Then
                 wrRequest = DirectCast(WebRequest.Create(_URL), HttpWebRequest)
                 wrRequest.Timeout = _defaultRequestTimeout
+                wrRequest.ReadWriteTimeout = _defaultRequestTimeout
+                wrRequest.AllowAutoRedirect = True
+                wrRequest.MaximumAutomaticRedirections = 5
+                wrRequest.KeepAlive = False
+
+                'wrRequest.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                wrRequest.Accept = "image/jpeg,image/png,image/gif,image/bmp,image/*;q=0.8"
+                'wrRequest.Headers.Add("Accept-Language", "en-US,en;q=0.9")
+                'wrRequest.Headers.Add("DNT", "1")
+                'wrRequest.Headers.Add("Sec-Fetch-Dest", "image")
+                'wrRequest.Headers.Add("Sec-Fetch-Mode", "no-cors")
+                'wrRequest.Headers.Add("Sec-Fetch-Site", "cross-site")
 
                 If _cancelRequested Then Return
 

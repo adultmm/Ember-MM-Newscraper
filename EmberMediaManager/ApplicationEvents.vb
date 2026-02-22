@@ -43,6 +43,7 @@ Namespace My
             logger.Info(String.Format("===={0}", Master.Version))
 
             Net.ServicePointManager.SecurityProtocol = Net.ServicePointManager.SecurityProtocol Or Net.SecurityProtocolType.Tls11 Or Net.SecurityProtocolType.Tls12
+            Net.ServicePointManager.DefaultConnectionLimit = 20
 
             Master.fLoading = New frmSplash
             Master.appArgs = e

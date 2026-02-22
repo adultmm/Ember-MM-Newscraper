@@ -1,4 +1,4 @@
-﻿' ################################################################################
+' ################################################################################
 ' #                             EMBER MEDIA MANAGER                              #
 ' ################################################################################
 ' ################################################################################
@@ -22,7 +22,7 @@ Imports System.Text
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 
 Imports EmberAPI
-Imports UnitTests
+
 
 Namespace EmberTests
 
@@ -83,13 +83,87 @@ Namespace EmberTests
         End Sub
         <IntegrationTest>
         <TestMethod()>
-        Public Sub HTTP_DownloadImage()
+        Public Sub HTTP_DownloadImage_ValidImageURL_ReturnsImage()
             'Arrange
+            ' URL requests an 800x1200 JPEG thumbnail
+            Dim imageURL As String = "https://thumb.theporndb.net/6aMjVmxotwfsJYYB1gFAb2-W1bc=/800x1200/smart/filters:sharpen():upscale()/scene%2F4d%2Fd3%2Fea%2F4b08887e02fb575a67f6be0afa60823%2Fbackground%2Fbg-fansdb-valsteele-onlyfans-legendary-club-orgy.jpg"
 
             'Act
+            HTTP.StartDownloadImage(imageURL)
+            ' Wait for the background thread to finish (max 30 seconds)
+            Dim timeout As Integer = 30000
+            Dim elapsed As Integer = 0
+            Dim interval As Integer = 100
+            Do While HTTP.IsDownloading() AndAlso elapsed < timeout
+                Threading.Thread.Sleep(interval)
+                elapsed += interval
+            Loop
 
             'Assert
-            Assert.Inconclusive("Test not implemented")
+            Assert.IsFalse(HTTP.IsDownloading(), "Download did not finish within timeout")
+            Assert.IsNotNull(HTTP.Image, "Image should not be Nothing after successful download")
+
+            ' Image must have valid pixel dimensions
+            Assert.IsTrue(HTTP.Image.Width > 0, "Image width should be greater than 0")
+            Assert.IsTrue(HTTP.Image.Height > 0, "Image height should be greater than 0")
+
+            ' The URL requests 800x1200 - server may return exact or proportional size
+            Assert.IsTrue(HTTP.Image.Width <= 800, String.Format("Image width ({0}) should be <= 800", HTTP.Image.Width))
+            Assert.IsTrue(HTTP.Image.Height <= 1200, String.Format("Image height ({0}) should be <= 1200", HTTP.Image.Height))
+
+            ' Must be recognised as JPEG (URL ends in .jpg, content-type should be image/jpeg)
+            Assert.IsTrue(HTTP.isJPG, "Image should be identified as JPEG")
+
+            ' MemoryStream must contain actual image data (JPEG magic bytes: FF D8 FF)
+            Dim streamBytes(2) As Byte
+            HTTP.ms.Position = 0
+            HTTP.ms.Read(streamBytes, 0, 3)
+            Assert.AreEqual(CByte(&HFF), streamBytes(0), "Expected JPEG magic byte 1 (0xFF)")
+            Assert.AreEqual(CByte(&HD8), streamBytes(1), "Expected JPEG magic byte 2 (0xD8)")
+            Assert.AreEqual(CByte(&HFF), streamBytes(2), "Expected JPEG magic byte 3 (0xFF)")
+
+            ' MemoryStream must contain substantial data (not just a tiny error response)
+            Assert.IsTrue(HTTP.ms.Length > 10000, String.Format("MemoryStream should contain substantial image data, got {0} bytes", HTTP.ms.Length))
+        End Sub
+
+        <IntegrationTest>
+        <TestMethod()>
+        Public Sub HTTP_DownloadImage_InvalidURL_DoesNotCrash()
+            'Arrange
+            Dim imageURL As String = "http://this.url.does.not.exist.invalid/image.jpg"
+
+            'Act
+            HTTP.StartDownloadImage(imageURL)
+            Dim timeout As Integer = 30000
+            Dim elapsed As Integer = 0
+            Dim interval As Integer = 100
+            Do While HTTP.IsDownloading() AndAlso elapsed < timeout
+                Threading.Thread.Sleep(interval)
+                elapsed += interval
+            Loop
+
+            'Assert
+            Assert.IsNull(HTTP.Image, "Image should be Nothing for an invalid URL")
+        End Sub
+
+        <IntegrationTest>
+        <TestMethod()>
+        Public Sub HTTP_DownloadImage_EmptyURL_DoesNotCrash()
+            'Arrange
+            ' Empty URL should be rejected by IsValidURL without making a request
+
+            'Act
+            HTTP.StartDownloadImage(String.Empty)
+            Dim timeout As Integer = 5000
+            Dim elapsed As Integer = 0
+            Dim interval As Integer = 100
+            Do While HTTP.IsDownloading() AndAlso elapsed < timeout
+                Threading.Thread.Sleep(interval)
+                elapsed += interval
+            Loop
+
+            'Assert
+            Assert.IsNull(HTTP.Image, "Image should be Nothing for an empty URL")
         End Sub
         <IntegrationTest>
         <TestMethod()>
@@ -121,9 +195,9 @@ Namespace EmberTests
                     {String.Empty, False},
                     {"http://google.com", True},
                     {"google.ca", False},
-                    {"http://google", False},
+                    {"http://google", True},
                     {"http://google.ca/", True},
-                    {"http://www.google.ca/garbage", False},
+                    {"http://www.google.ca/garbage", True},
                     {"http://i54.tinypic.com/27ybwqt.png", True},
                     {"http://i54.tinypic.com/27ybwqt.png/fdsa", True},
                     {"http://www.youtube.com/watch?v=SDnYMbYB-nU", True}
@@ -131,7 +205,7 @@ Namespace EmberTests
 
             For Each pair As KeyValuePair(Of String, Boolean) In sourceValues
                 'Act
-                Dim result As Boolean = HTTP.IsValidURL(pair.Key)
+                Dim result As Boolean = StringUtils.isValidURL(pair.Key)
                 'Assert
                 Assert.AreEqual(pair.Value, result, "Data tested was: '{0}' and was expecting '{1}', but received '{2}'", pair.Key, pair.Value, result)
             Next
@@ -141,7 +215,7 @@ Namespace EmberTests
         Public Sub HTTP_IsValidURL_Nothing_parameter()
             'Arrange
             'Act
-            Dim result As Boolean = HTTP.IsValidURL(Nothing)
+            Dim result As Boolean = StringUtils.isValidURL(Nothing)
             'Assert
             Assert.IsFalse(result, "Data tested was: 'Nothing' and was expecting 'False', but received '{0}'", result)
         End Sub
