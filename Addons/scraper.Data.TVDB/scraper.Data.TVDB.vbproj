@@ -195,15 +195,15 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\TheTVDBApi\src\TVDB\TVDB.csproj">
-      <Project>{a265b83f-495e-43bd-b1f5-c89b58618a84}</Project>
-      <Name>TVDB</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\EmberAPI\EmberAPI.vbproj">
       <Project>{208aa35e-c6ae-4d2d-a9dd-b6efd19a4279}</Project>
       <Name>EmberAPI</Name>
       <Private>False</Private>
     </ProjectReference>
+    <Reference Include="TVDB">
+      <HintPath>..\..\..\TheTVDBApi\src\TVDB\bin\Debug\TVDB.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />

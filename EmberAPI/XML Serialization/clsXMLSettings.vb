@@ -61,6 +61,7 @@ Partial Public Class clsXMLSettings
     Private _generalinfopanelstatemovie As Integer
     Private _generalinfopanelstatemovieset As Integer
     Private _generalinfopanelstatetvshow As Integer
+    Private _generaloutlineboxdisplaymode As Integer = 2 'Auto
     Private _generallanguage As String
     Private _generalmainfiltersortcolumn_episodes As Integer
     Private _generalmainfiltersortcolumn_movies As Integer
@@ -2241,6 +2242,15 @@ Partial Public Class clsXMLSettings
         End Get
         Set(ByVal value As Integer)
             Me._generalinfopanelstatemovieset = value
+        End Set
+    End Property
+
+    Public Property GeneralOutlineBoxDisplayMode() As Integer
+        Get
+            Return Me._generaloutlineboxdisplaymode
+        End Get
+        Set(ByVal value As Integer)
+            Me._generaloutlineboxdisplaymode = value
         End Set
     End Property
 

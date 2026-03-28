@@ -692,7 +692,7 @@ Public Class frmMain
         txtCertifications.Text = String.Empty
         txtIMDBID.Text = String.Empty
         txtFilePath.Text = String.Empty
-        txtOutline.Text = String.Empty
+        UpdateOutlineBox()
         txtPlot.Text = String.Empty
         txtTMDBID.Text = String.Empty
         txtTrailerPath.Text = String.Empty
@@ -953,6 +953,7 @@ Public Class frmMain
         pbMILoading.Visible = False
 
         pnlInfoPanel.ResumeLayout()
+        UpdateOutlineBox()
     End Sub
 
     Private Sub btnCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnCancel.Click
@@ -9994,7 +9995,7 @@ Public Class frmMain
             pnlTop250.Visible = False
         End If
 
-        txtOutline.Text = currMovie.Movie.Outline
+        UpdateOutlineBox()
         txtPlot.Text = currMovie.Movie.Plot
         lblTagline.Text = currMovie.Movie.Tagline
 
@@ -10555,6 +10556,16 @@ Public Class frmMain
     ''' <remarks></remarks>
     Private Sub frmMain_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
         Visible = False
+
+        btnOutlineSettings.BringToFront()
+        btnOutlineSettings.Image = Nothing
+        ' Use Segoe MDL2 Assets gear icon (Windows 10+)
+        Dim gearFont As New System.Drawing.Font("Segoe MDL2 Assets", 10, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point)
+        btnOutlineSettings.Font = gearFont
+        btnOutlineSettings.Text = Convert.ToChar(&HE713).ToString()
+        btnOutlineSettings.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
+        ' DEBUG: show build timestamp in title
+        Me.Text = "Adult Media Manager [BUILD: " & System.IO.File.GetLastWriteTime(System.Reflection.Assembly.GetExecutingAssembly().Location).ToString("HH:mm:ss") & "]"
 
         'AMM changes
         mnuVersion.Visible = False
@@ -18136,6 +18147,7 @@ Public Class frmMain
                     btnMid.Enabled = True
                 End If
         End Select
+        UpdateOutlineBox()
     End Sub
 
     Private Sub FilterMovement_Movies()
@@ -18955,6 +18967,73 @@ Public Class frmMain
     Private Sub UpdatemnuVersion(sText As String, sForeColor As Color)
         mnuVersion.Text = sText
         mnuVersion.ForeColor = sForeColor
+    End Sub
+
+    Private Sub btnOutlineSettings_Click(sender As Object, e As EventArgs) Handles btnOutlineSettings.Click
+        Dim mode As Enums.OutlineBoxDisplayMode = Master.eSettings.GeneralOutlineBoxDisplayMode
+        cmnuOutlineBoxPlotOutline.Checked = (mode = Enums.OutlineBoxDisplayMode.PlotOutline)
+        cmnuOutlineBoxPlot.Checked = (mode = Enums.OutlineBoxDisplayMode.Plot)
+        cmnuOutlineBoxAuto.Checked = (mode = Enums.OutlineBoxDisplayMode.Auto)
+        cmnuOutlineBox.Show(btnOutlineSettings, New Point(0, btnOutlineSettings.Height))
+    End Sub
+
+    Private Sub cmnuOutlineBoxPlotOutline_Click(sender As Object, e As EventArgs) Handles cmnuOutlineBoxPlotOutline.Click
+        Master.eSettings.GeneralOutlineBoxDisplayMode = Enums.OutlineBoxDisplayMode.PlotOutline
+        Master.eSettings.Save()
+        UpdateOutlineBox()
+    End Sub
+
+    Private Sub cmnuOutlineBoxPlot_Click(sender As Object, e As EventArgs) Handles cmnuOutlineBoxPlot.Click
+        Master.eSettings.GeneralOutlineBoxDisplayMode = Enums.OutlineBoxDisplayMode.Plot
+        Master.eSettings.Save()
+        UpdateOutlineBox()
+    End Sub
+
+    Private Sub cmnuOutlineBoxAuto_Click(sender As Object, e As EventArgs) Handles cmnuOutlineBoxAuto.Click
+        Master.eSettings.GeneralOutlineBoxDisplayMode = Enums.OutlineBoxDisplayMode.Auto
+        Master.eSettings.Save()
+        UpdateOutlineBox()
+    End Sub
+
+    Private Sub UpdateOutlineBox()
+        ' In State=2 (up), both Outline and Plot boxes are visible separately — always show Outline in top box, hide gear icon
+        Dim currState As Integer
+        Try
+            Dim tag As Structures.MainTabType = DirectCast(tcMain.SelectedTab.Tag, Structures.MainTabType)
+            currState = If(tag.ContentType = Enums.ContentType.Movie, InfoPanelState_Movie, If(tag.ContentType = Enums.ContentType.MovieSet, InfoPanelState_MovieSet, InfoPanelState_TVShow))
+        Catch
+            currState = InfoPanelState_Movie
+        End Try
+        If currState = 2 Then
+            btnOutlineSettings.Visible = False
+            lblOutlineHeader.Text = "Plot Outline"
+            txtOutline.Text = If(currMovie IsNot Nothing, currMovie.Movie.Outline, String.Empty)
+            Return
+        End If
+        ' Position the button next to the scrollbar, at the right edge of the label
+        Dim sbw As Integer = SystemInformation.VerticalScrollBarWidth
+        btnOutlineSettings.Size = New System.Drawing.Size(sbw, lblOutlineHeader.Height)
+        btnOutlineSettings.Location = New System.Drawing.Point(lblOutlineHeader.Right - sbw, lblOutlineHeader.Top)
+        btnOutlineSettings.ForeColor = lblOutlineHeader.ForeColor
+        btnOutlineSettings.BackColor = lblOutlineHeader.BackColor
+        btnOutlineSettings.Visible = True
+        Dim mode As Enums.OutlineBoxDisplayMode = Master.eSettings.GeneralOutlineBoxDisplayMode
+        Select Case mode
+            Case Enums.OutlineBoxDisplayMode.PlotOutline
+                lblOutlineHeader.Text = "Plot Outline"
+                txtOutline.Text = If(currMovie IsNot Nothing, currMovie.Movie.Outline, String.Empty)
+            Case Enums.OutlineBoxDisplayMode.Plot
+                lblOutlineHeader.Text = "Plot"
+                txtOutline.Text = If(currMovie IsNot Nothing, currMovie.Movie.Plot, String.Empty)
+            Case Else ' Auto
+                If currMovie IsNot Nothing AndAlso String.IsNullOrEmpty(currMovie.Movie.Outline) Then
+                    lblOutlineHeader.Text = "Plot"
+                    txtOutline.Text = currMovie.Movie.Plot
+                Else
+                    lblOutlineHeader.Text = "Plot Outline"
+                    txtOutline.Text = If(currMovie IsNot Nothing, currMovie.Movie.Outline, String.Empty)
+                End If
+        End Select
     End Sub
 
 #End Region 'Methods

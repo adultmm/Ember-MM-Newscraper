@@ -1185,6 +1185,16 @@ Public Class Settings
         End Set
     End Property
 
+    <Xml.Serialization.XmlIgnore>
+    Public Property GeneralOutlineBoxDisplayMode() As Enums.OutlineBoxDisplayMode
+        Get
+            Return CType(Settings._XMLSettings.GeneralOutlineBoxDisplayMode, Enums.OutlineBoxDisplayMode)
+        End Get
+        Set(ByVal value As Enums.OutlineBoxDisplayMode)
+            Settings._XMLSettings.GeneralOutlineBoxDisplayMode = CInt(value)
+        End Set
+    End Property
+
     Public Property GeneralLanguage() As String
         Get
             Return Settings._XMLSettings.GeneralLanguage
@@ -7036,6 +7046,7 @@ Public Class Settings
         GeneralInfoPanelStateMovie = 200
         GeneralInfoPanelStateMovieSet = 200
         GeneralInfoPanelStateTVShow = 200
+        GeneralOutlineBoxDisplayMode = Enums.OutlineBoxDisplayMode.Auto
         GeneralLanguage = "English_(en_US)"
         GeneralMainFilterSortColumn_Episodes = 1
         GeneralMainFilterSortColumn_MovieSets = 1

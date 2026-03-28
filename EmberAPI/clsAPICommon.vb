@@ -606,6 +606,12 @@ Public Class Enums
         Aired = 1
     End Enum
 
+    Public Enum OutlineBoxDisplayMode As Integer
+        PlotOutline = 0
+        Plot = 1
+        Auto = 2
+    End Enum
+
     Public Enum ModifierType As Integer
         All = 0
         AllSeasonsBanner = 1

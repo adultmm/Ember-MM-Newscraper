@@ -626,6 +626,11 @@ Partial Class frmMain
         Me.pbActors = New System.Windows.Forms.PictureBox()
         Me.lblActorsHeader = New System.Windows.Forms.Label()
         Me.lblOutlineHeader = New System.Windows.Forms.Label()
+        Me.btnOutlineSettings = New System.Windows.Forms.Button()
+        Me.cmnuOutlineBox = New System.Windows.Forms.ContextMenuStrip(Me.components)
+        Me.cmnuOutlineBoxPlotOutline = New System.Windows.Forms.ToolStripMenuItem()
+        Me.cmnuOutlineBoxPlot = New System.Windows.Forms.ToolStripMenuItem()
+        Me.cmnuOutlineBoxAuto = New System.Windows.Forms.ToolStripMenuItem()
         Me.txtOutline = New System.Windows.Forms.TextBox()
         Me.pnlTop250 = New System.Windows.Forms.Panel()
         Me.lblTop250 = New System.Windows.Forms.Label()
@@ -7144,6 +7149,7 @@ Partial Class frmMain
         Me.pnlInfoPanel.Controls.Add(Me.lblDirectorsHeader)
         Me.pnlInfoPanel.Controls.Add(Me.pnlActors)
         Me.pnlInfoPanel.Controls.Add(Me.lblOutlineHeader)
+        Me.pnlInfoPanel.Controls.Add(Me.btnOutlineSettings)
         Me.pnlInfoPanel.Controls.Add(Me.txtOutline)
         Me.pnlInfoPanel.Controls.Add(Me.pnlTop250)
         Me.pnlInfoPanel.Controls.Add(Me.lblPlotHeader)
@@ -7526,6 +7532,8 @@ Partial Class frmMain
         '
         Me.lblOutlineHeader.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.lblOutlineHeader.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.lblOutlineHeader.BackColor = System.Drawing.SystemColors.ControlDarkDark
         Me.lblOutlineHeader.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
         Me.lblOutlineHeader.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
@@ -7536,6 +7544,44 @@ Partial Class frmMain
         Me.lblOutlineHeader.TabIndex = 17
         Me.lblOutlineHeader.Text = "Plot Outline"
         Me.lblOutlineHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
+        '
+        'btnOutlineSettings
+        '
+        Me.btnOutlineSettings.Anchor = System.Windows.Forms.AnchorStyles.None
+        Me.btnOutlineSettings.FlatStyle = System.Windows.Forms.FlatStyle.Flat
+        Me.btnOutlineSettings.FlatAppearance.BorderSize = 0
+        Me.btnOutlineSettings.FlatAppearance.MouseOverBackColor = System.Drawing.SystemColors.ControlDark
+        Me.btnOutlineSettings.Location = New System.Drawing.Point(596, 81)
+        Me.btnOutlineSettings.Name = "btnOutlineSettings"
+        Me.btnOutlineSettings.Padding = New System.Windows.Forms.Padding(0)
+        Me.btnOutlineSettings.Size = New System.Drawing.Size(17, 17)
+        Me.btnOutlineSettings.TabIndex = 99
+        Me.btnOutlineSettings.TabStop = False
+        Me.btnOutlineSettings.UseVisualStyleBackColor = False
+        '
+        'cmnuOutlineBox
+        '
+        Me.cmnuOutlineBox.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.cmnuOutlineBoxPlotOutline, Me.cmnuOutlineBoxPlot, Me.cmnuOutlineBoxAuto})
+        Me.cmnuOutlineBox.Name = "cmnuOutlineBox"
+        Me.cmnuOutlineBox.Size = New System.Drawing.Size(140, 70)
+        '
+        'cmnuOutlineBoxPlotOutline
+        '
+        Me.cmnuOutlineBoxPlotOutline.Name = "cmnuOutlineBoxPlotOutline"
+        Me.cmnuOutlineBoxPlotOutline.Size = New System.Drawing.Size(139, 22)
+        Me.cmnuOutlineBoxPlotOutline.Text = "Plot Outline"
+        '
+        'cmnuOutlineBoxPlot
+        '
+        Me.cmnuOutlineBoxPlot.Name = "cmnuOutlineBoxPlot"
+        Me.cmnuOutlineBoxPlot.Size = New System.Drawing.Size(139, 22)
+        Me.cmnuOutlineBoxPlot.Text = "Plot"
+        '
+        'cmnuOutlineBoxAuto
+        '
+        Me.cmnuOutlineBoxAuto.Name = "cmnuOutlineBoxAuto"
+        Me.cmnuOutlineBoxAuto.Size = New System.Drawing.Size(139, 22)
+        Me.cmnuOutlineBoxAuto.Text = "Auto"
         '
         'txtOutline
         '
@@ -10342,6 +10388,11 @@ End Sub
     Friend WithEvents pbActors As System.Windows.Forms.PictureBox
     Friend WithEvents lblActorsHeader As System.Windows.Forms.Label
     Friend WithEvents lblOutlineHeader As System.Windows.Forms.Label
+    Friend WithEvents btnOutlineSettings As System.Windows.Forms.Button
+    Friend WithEvents cmnuOutlineBox As System.Windows.Forms.ContextMenuStrip
+    Friend WithEvents cmnuOutlineBoxPlotOutline As System.Windows.Forms.ToolStripMenuItem
+    Friend WithEvents cmnuOutlineBoxPlot As System.Windows.Forms.ToolStripMenuItem
+    Friend WithEvents cmnuOutlineBoxAuto As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents txtOutline As System.Windows.Forms.TextBox
     Friend WithEvents pnlTop250 As System.Windows.Forms.Panel
     Friend WithEvents lblTop250 As System.Windows.Forms.Label
