@@ -37,6 +37,9 @@ Public Class Database
 
     Friend WithEvents bwPatchDB As New System.ComponentModel.BackgroundWorker
 
+    Private _lastPatchError As Exception
+    Private _lastPatchSucceeded As Boolean
+
     ReadOnly _connStringTemplate As String = "Data Source=""{0}"";Version=3;Compress=True"
     Protected _myvideosDBConn As SQLiteConnection
     ' NOTE: This will use another DB because: can grow alot, Don't want to stress Media DB with this stuff
@@ -1075,20 +1078,31 @@ Public Class Database
 
         Dim MyVideosDBFile As String = Path.Combine(Master.SettingsPath, MyVideosDB)
 
+        TryRecoverFailedUpgrade(MyVideosDBVersion, MyVideosDBFile)
+
+        Dim upgradeAttempted As Boolean = False
+
         'check if an older DB version still exist
         If Not File.Exists(MyVideosDBFile) Then
             For i As Integer = MyVideosDBVersion - 1 To 2 Step -1
                 Dim oldMyVideosDB As String = String.Format("MyVideos{0}.emm", i)
                 Dim oldMyVideosDBFile As String = Path.Combine(Master.SettingsPath, oldMyVideosDB)
                 If File.Exists(oldMyVideosDBFile) Then
+                    upgradeAttempted = True
                     Master.fLoading.SetLoadingMesg(Master.eLang.GetString(1356, "Upgrading database..."))
-                    Patch_MyVideos(oldMyVideosDBFile, MyVideosDBFile, i, MyVideosDBVersion)
+                    If Not Patch_MyVideos(oldMyVideosDBFile, MyVideosDBFile, i, MyVideosDBVersion) Then
+                        AbortDatabaseUpgrade()
+                    End If
                     Exit For
                 End If
             Next
         End If
 
         Dim isNew As Boolean = Not File.Exists(MyVideosDBFile)
+
+        If isNew AndAlso upgradeAttempted Then
+            AbortDatabaseUpgrade()
+        End If
 
         Try
             _myvideosDBConn = New SQLiteConnection(String.Format(_connStringTemplate, MyVideosDBFile))
@@ -3191,6 +3205,77 @@ Public Class Database
         Return _source
     End Function
 
+    Private Function GetDatabaseMediaCount(ByVal dbFile As String) As Integer
+        Try
+            Using conn As New SQLiteConnection(String.Format(_connStringTemplate, dbFile))
+                conn.Open()
+                Using cmd As SQLiteCommand = conn.CreateCommand()
+                    cmd.CommandText = "SELECT COUNT(*) FROM movie;"
+                    Dim movieCount As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    cmd.CommandText = "SELECT COUNT(*) FROM tvshow;"
+                    Dim tvCount As Integer = Convert.ToInt32(cmd.ExecuteScalar())
+                    Return movieCount + tvCount
+                End Using
+            End Using
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Unable to read media count from <" & dbFile & ">")
+            Return -1
+        End Try
+    End Function
+
+    Private Sub TryRecoverFailedUpgrade(ByVal myVideosDBVersion As Integer, ByVal myVideosDBFile As String)
+        If Not File.Exists(myVideosDBFile) Then Return
+
+        Dim oldDBFile As String = Nothing
+        For i As Integer = myVideosDBVersion - 1 To 2 Step -1
+            Dim candidate As String = Path.Combine(Master.SettingsPath, String.Format("MyVideos{0}.emm", i))
+            If File.Exists(candidate) Then
+                oldDBFile = candidate
+                Exit For
+            End If
+        Next
+
+        If oldDBFile Is Nothing Then Return
+
+        Dim newCount As Integer = GetDatabaseMediaCount(myVideosDBFile)
+        Dim oldCount As Integer = GetDatabaseMediaCount(oldDBFile)
+
+        If newCount = 0 AndAlso oldCount > 0 Then
+            logger.Warn(String.Format("Recovering from failed upgrade: deleting empty ""{0}"" (previous database ""{1}"" has {2} items)", Path.GetFileName(myVideosDBFile), Path.GetFileName(oldDBFile), oldCount))
+            Try
+                File.Delete(myVideosDBFile)
+            Catch ex As Exception
+                logger.Error(ex, New StackFrame().GetMethod().Name)
+            End Try
+            Dim tmpFile As String = String.Concat(myVideosDBFile, "_tmp")
+            If File.Exists(tmpFile) Then
+                Try
+                    File.Delete(tmpFile)
+                Catch ex As Exception
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
+                End Try
+            End If
+        End If
+    End Sub
+
+    Private Sub ShowDatabaseUpgradeFailed(ByVal ex As Exception)
+        Dim logFile As String = Path.Combine(Functions.AppPath, "Log", String.Format("{0:yyyy-MM-dd}.csv", DateTime.Now))
+        Dim detail As String = If(ex IsNot Nothing, ex.Message, "Unknown error")
+        Dim msg As String = String.Format(
+            "Database upgrade failed. The application cannot start.{0}{0}Reason:{0}{1}{0}{0}Log file:{0}{2}{0}{0}Your previous database file has been preserved. After fixing the issue, restart the application.",
+            Environment.NewLine, detail, logFile)
+
+        If Master.isUserInteractive Then
+            MessageBox.Show(msg, "Database Upgrade Failed", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End If
+    End Sub
+
+    Private Sub AbortDatabaseUpgrade()
+        ShowDatabaseUpgradeFailed(_lastPatchError)
+        logger.Error("Database upgrade failed. Application exit.")
+        Environment.Exit(1)
+    End Sub
+
     Private Sub bwPatchDB_DoWork(ByVal sender As Object, ByVal e As System.ComponentModel.DoWorkEventArgs) Handles bwPatchDB.DoWork
         Dim Args As Arguments = DirectCast(e.Argument, Arguments)
 
@@ -3247,6 +3332,7 @@ Public Class Database
                         Else
                             logger.Trace(New StackFrame().GetMethod().Name, String.Format("Transaction {0} RollBack", Trans.name))
                             SQLtransaction.Rollback()
+                            Throw New InvalidOperationException(String.Format("Database patch transaction failed: {0}", Trans.name))
                         End If
                     End Using
                 Next
@@ -3396,10 +3482,27 @@ Public Class Database
             End Using
 
             _myvideosDBConn.Close()
+            _myvideosDBConn = Nothing
             File.Move(tempName, Args.newDBPath)
+            e.Result = True
         Catch ex As Exception
-            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Unable to open media database connection.")
-            _myvideosDBConn.Close()
+            _lastPatchError = ex
+            logger.Error(ex, New StackFrame().GetMethod().Name & Convert.ToChar(Windows.Forms.Keys.Tab) & "Database patch failed.")
+            Try
+                If _myvideosDBConn IsNot Nothing Then
+                    _myvideosDBConn.Close()
+                    _myvideosDBConn = Nothing
+                End If
+            Catch
+            End Try
+            If File.Exists(tempName) Then
+                Try
+                    File.Delete(tempName)
+                Catch exDelete As Exception
+                    logger.Error(exDelete, New StackFrame().GetMethod().Name)
+                End Try
+            End If
+            e.Result = False
         End Try
     End Sub
 
@@ -3411,7 +3514,14 @@ Public Class Database
     End Sub
 
     Private Sub bwPatchDB_RunWorkerCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwPatchDB.RunWorkerCompleted
-        Return
+        If e.Error IsNot Nothing Then
+            _lastPatchError = e.Error
+            _lastPatchSucceeded = False
+        ElseIf e.Cancelled Then
+            _lastPatchSucceeded = False
+        Else
+            _lastPatchSucceeded = CBool(e.Result)
+        End If
     End Sub
     ''' <summary>
     ''' Execute arbitrary SQL commands against the database. Commands are retrieved from fname. 
@@ -3422,11 +3532,13 @@ Public Class Database
     ''' <param name="cVersion">current version of DB to patch</param>
     ''' <param name="nVersion">lastest version of DB</param>
     ''' <remarks></remarks>
-    Public Sub Patch_MyVideos(ByVal cPath As String, ByVal nPath As String, ByVal cVersion As Integer, ByVal nVersion As Integer)
+    Public Function Patch_MyVideos(ByVal cPath As String, ByVal nPath As String, ByVal cVersion As Integer, ByVal nVersion As Integer) As Boolean
+
+        _lastPatchError = Nothing
+        _lastPatchSucceeded = False
 
         Master.fLoading.SetProgressBarStyle(ProgressBarStyle.Marquee)
 
-        bwPatchDB = New System.ComponentModel.BackgroundWorker
         bwPatchDB.WorkerReportsProgress = True
         bwPatchDB.WorkerSupportsCancellation = False
         bwPatchDB.RunWorkerAsync(New Arguments With {.currDBPath = cPath, .currVersion = cVersion, .newDBPath = nPath, .newVersion = nVersion})
@@ -3435,7 +3547,9 @@ Public Class Database
             Application.DoEvents()
             Threading.Thread.Sleep(50)
         End While
-    End Sub
+
+        Return _lastPatchSucceeded
+    End Function
 
     Private Sub Prepare_AllSeasonsEntries(ByVal BatchMode As Boolean)
         bwPatchDB.ReportProgress(-1, "Fixing ""* All Seasons"" entries...")
