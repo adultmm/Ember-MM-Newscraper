@@ -195,6 +195,7 @@
     <Compile Include="clsAPITaskManager.vb" />
     <Compile Include="clsAPICommon.vb" />
     <Compile Include="clsAPIDatabase.vb" />
+    <Compile Include="clsPlexIgnore.vb" />
     <Compile Include="clsAPIDVD.vb" />
     <Compile Include="clsAPIFileUtils.vb" />
     <Compile Include="clsAPIHTTP.vb" />
@@ -456,6 +457,10 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="DB\MyVideosDBSQL_v45_Patch.xml">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="DB\MyVideosDBSQL_v46_Patch.xml">
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

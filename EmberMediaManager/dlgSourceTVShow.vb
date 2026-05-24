@@ -18,6 +18,7 @@
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
 
+Imports System.Diagnostics
 Imports System.IO
 Imports System.Text.RegularExpressions
 Imports EmberAPI
@@ -36,6 +37,13 @@ Public Class dlgSourceTVShow
     Private strPrevPath As String = String.Empty
     Private strTmpPath As String
     Private _id As Integer = -1
+    Private _loadedUsePlexIgnore As Boolean = False
+    Private _isNewSource As Boolean = True
+
+    ''' <summary>
+    ''' Set when the user chose to remove ignored entries; clean runs after Settings closes.
+    ''' </summary>
+    Public RequestPlexIgnoreClean As Boolean = False
 
 #End Region 'Fields
 
@@ -175,10 +183,13 @@ Public Class dlgSourceTVShow
     Private Sub dlgSourceTVShow_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         SetUp()
 
+        _isNewSource = (_id = -1)
+
         If Not _id = -1 Then
             Dim s As Database.DBSource = Master.DB.GetSources_TVShow.FirstOrDefault(Function(y) y.ID = _id)
             If s IsNot Nothing Then
                 bAutoName = False
+                _loadedUsePlexIgnore = s.UsePlexIgnore
                 If cbSourceLanguage.Items.Count > 0 Then
                     Dim tLanguage = APIXML.ScraperLanguages.Languages.FirstOrDefault(Function(l) l.Abbreviation = s.Language)
                     If tLanguage IsNot Nothing Then
@@ -196,10 +207,12 @@ Public Class dlgSourceTVShow
                 cbSourceEpisodeSorting.SelectedIndex = s.EpisodeSorting
                 chkExclude.Checked = s.Exclude
                 chkSingle.Checked = s.IsSingle
+                chkUsePlexIgnore.Checked = s.UsePlexIgnore
                 txtSourceName.Text = s.Name
                 txtSourcePath.Text = s.Path
             End If
         Else
+            _loadedUsePlexIgnore = False
             If cbSourceLanguage.Items.Count > 0 Then
                 Dim tLanguage = APIXML.ScraperLanguages.Languages.FirstOrDefault(Function(l) l.Abbreviation = Master.eSettings.TVGeneralLanguage)
                 If tLanguage IsNot Nothing Then
@@ -230,9 +243,9 @@ Public Class dlgSourceTVShow
         Using SQLtransaction As SQLite.SQLiteTransaction = Master.DB.MyVideosDBConn.BeginTransaction()
             Using SQLcommand As SQLite.SQLiteCommand = Master.DB.MyVideosDBConn.CreateCommand()
                 If Not _id = -1 Then
-                    SQLcommand.CommandText = String.Concat("UPDATE tvshowsource SET strName = (?), strPath = (?), strLanguage = (?), iOrdering = (?), bExclude = (?), iEpisodeSorting = (?) , bSingle = (?) WHERE idSource =", _id, ";")
+                    SQLcommand.CommandText = String.Concat("UPDATE tvshowsource SET strName = (?), strPath = (?), strLanguage = (?), iOrdering = (?), bExclude = (?), iEpisodeSorting = (?) , bSingle = (?), bUsePlexIgnore = (?) WHERE idSource =", _id, ";")
                 Else
-                    SQLcommand.CommandText = "INSERT OR REPLACE INTO tvshowsource (strName, strPath, strLanguage, iOrdering, bExclude, iEpisodeSorting, bSingle) VALUES (?,?,?,?,?,?,?);"
+                    SQLcommand.CommandText = "INSERT OR REPLACE INTO tvshowsource (strName, strPath, strLanguage, iOrdering, bExclude, iEpisodeSorting, bSingle, bUsePlexIgnore) VALUES (?,?,?,?,?,?,?,?);"
                 End If
                 Dim parName As SQLite.SQLiteParameter = SQLcommand.Parameters.Add("parName", DbType.String, 0, "strName")
                 Dim parPath As SQLite.SQLiteParameter = SQLcommand.Parameters.Add("parPath", DbType.String, 0, "strPath")
@@ -241,6 +254,7 @@ Public Class dlgSourceTVShow
                 Dim parExclude As SQLite.SQLiteParameter = SQLcommand.Parameters.Add("parExclude", DbType.Boolean, 0, "bExclude")
                 Dim parEpisodeSorting As SQLite.SQLiteParameter = SQLcommand.Parameters.Add("parEpisodeSorting", DbType.Int16, 0, "iEpisodeSorting")
                 Dim parSingle As SQLite.SQLiteParameter = SQLcommand.Parameters.Add("parSingle", DbType.Boolean, 0, "bSingle")
+                Dim parUsePlexIgnore As SQLite.SQLiteParameter = SQLcommand.Parameters.Add("parUsePlexIgnore", DbType.Boolean, 0, "bUsePlexIgnore")
                 parName.Value = txtSourceName.Text.Trim
                 parPath.Value = strSourcePath
                 parExclude.Value = chkExclude.Checked
@@ -260,11 +274,18 @@ Public Class dlgSourceTVShow
                 Else
                     parEpisodeSorting.Value = Enums.EpisodeSorting.Episode
                 End If
+                parUsePlexIgnore.Value = chkUsePlexIgnore.Checked
 
                 SQLcommand.ExecuteNonQuery()
             End Using
             SQLtransaction.Commit()
         End Using
+
+        If Not _isNewSource Then
+            RequestPlexIgnoreClean = PlexIgnorePromptHelper.PromptAfterTVSourceSave(_loadedUsePlexIgnore, chkUsePlexIgnore.Checked, _id)
+        Else
+            RequestPlexIgnoreClean = False
+        End If
 
         DialogResult = DialogResult.OK
     End Sub
@@ -275,6 +296,12 @@ Public Class dlgSourceTVShow
         Cancel_Button.Text = Master.eLang.GetString(167, "Cancel")
         chkExclude.Text = Master.eLang.GetString(164, "Exclude path from library updates")
         chkSingle.Text = Master.eLang.GetString(1048, "Selected folder contains a single TV Show")
+        'FIXME: i18n
+        chkUsePlexIgnore.Text = "Respect .plexignore files"
+        'FIXME: i18n
+        lnkPlexIgnoreInfo.Text = "What is .plexignore?"
+        'FIXME: i18n
+        ttPlexIgnore.SetToolTip(pbPlexIgnoreInfo, "When enabled, Ember Media Manager will skip files and folders that are excluded by .plexignore files in your media folders — the same way Plex Media Server does.")
         gbSourceOptions.Text = Master.eLang.GetString(201, "Source Options")
         lblSourceEpisodeSorting.Text = String.Concat(Master.eLang.GetString(364, "Show Episodes by"), ":")
         lblSourceLanguage.Text = String.Concat(Master.eLang.GetString(1166, "Default Language"), ":")
@@ -291,6 +318,10 @@ Public Class dlgSourceTVShow
 
         cbSourceEpisodeSorting.Items.Clear()
         cbSourceEpisodeSorting.Items.AddRange(New String() {Master.eLang.GetString(755, "Episode #"), Master.eLang.GetString(728, "Aired")})
+    End Sub
+
+    Private Sub lnkPlexIgnoreInfo_LinkClicked(ByVal sender As Object, ByVal e As System.Windows.Forms.LinkLabelLinkClickedEventArgs) Handles lnkPlexIgnoreInfo.LinkClicked
+        Functions.Launch(My.Resources.urlPlexIgnoreDocs)
     End Sub
 
     Private Sub tmrName_Tick(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles tmrName.Tick

@@ -580,7 +580,8 @@ CREATE TABLE moviesource (
 		strLastScan		TEXT NOT NULL DEFAULT '1900/01/01',
 		bExclude		BOOL NOT NULL DEFAULT 0,
 		bGetYear		BOOL NOT NULL DEFAULT 1,
-		strLanguage		TEXT NOT NULL DEFAULT 'en-US'
+		strLanguage		TEXT NOT NULL DEFAULT 'en-US',
+		bUsePlexIgnore	BOOL NOT NULL DEFAULT 0
 		);
 	
 CREATE UNIQUE INDEX UniqueMovieSourcePath
@@ -644,7 +645,8 @@ CREATE TABLE tvshowsource (
 		iOrdering			INTEGER NOT NULL DEFAULT 0,
 		bExclude			BOOL NOT NULL DEFAULT 0,
 		iEpisodeSorting		INTEGER NOT NULL DEFAULT 0,
-		bSingle				BOOL NOT NULL DEFAULT 0
+		bSingle				BOOL NOT NULL DEFAULT 0,
+		bUsePlexIgnore		BOOL NOT NULL DEFAULT 0
 		);
 
 CREATE UNIQUE INDEX UniqueTVShowSourcePath

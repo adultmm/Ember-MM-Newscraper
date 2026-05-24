@@ -272,6 +272,10 @@
   <data name="urlEmberBugTracker" xml:space="preserve">
     <value>https://github.com/adultmm/AdultMediaManager/issues</value>
   </data>
+  <data name="urlPlexIgnoreDocs" xml:space="preserve">
+    <value>https://support.plex.tv/articles/201381883-special-keyword-file-folder-exclusion/</value>
+    <comment>Plex documentation for .plexignore file and folder exclusion rules</comment>
+  </data>
   <data name="urlIMPAwards" xml:space="preserve">
     <value>http://www.impawards.com/</value>
     <comment>Internet Movie Poster Awards - Featuring one of the largest collections of movie poster images on the web.</comment>

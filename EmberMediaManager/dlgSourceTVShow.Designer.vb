@@ -48,10 +48,17 @@ Partial Class dlgSourceTVShow
         Me.cbSourceOrdering = New System.Windows.Forms.ComboBox()
         Me.cbSourceLanguage = New System.Windows.Forms.ComboBox()
         Me.chkSingle = New System.Windows.Forms.CheckBox()
+        Me.chkUsePlexIgnore = New System.Windows.Forms.CheckBox()
+        Me.flpPlexIgnore = New System.Windows.Forms.FlowLayoutPanel()
+        Me.pbPlexIgnoreInfo = New System.Windows.Forms.PictureBox()
+        Me.lnkPlexIgnoreInfo = New System.Windows.Forms.LinkLabel()
+        Me.ttPlexIgnore = New System.Windows.Forms.ToolTip(Me.components)
         Me.pnlBottom = New System.Windows.Forms.Panel()
         Me.tblBottom = New System.Windows.Forms.TableLayoutPanel()
         Me.pbValidSourcePath = New System.Windows.Forms.PictureBox()
         CType(Me.pbValidSourceName, System.ComponentModel.ISupportInitialize).BeginInit()
+        Me.flpPlexIgnore.SuspendLayout()
+        CType(Me.pbPlexIgnoreInfo, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.pnlMain.SuspendLayout()
         Me.tblMain.SuspendLayout()
         Me.gbSourceOptions.SuspendLayout()
@@ -232,10 +239,13 @@ Partial Class dlgSourceTVShow
         Me.tblSourceOptions.Controls.Add(Me.cbSourceOrdering, 1, 3)
         Me.tblSourceOptions.Controls.Add(Me.cbSourceLanguage, 1, 2)
         Me.tblSourceOptions.Controls.Add(Me.chkSingle, 0, 0)
+        Me.tblSourceOptions.Controls.Add(Me.chkUsePlexIgnore, 0, 5)
+        Me.tblSourceOptions.Controls.Add(Me.flpPlexIgnore, 1, 5)
         Me.tblSourceOptions.Dock = System.Windows.Forms.DockStyle.Fill
         Me.tblSourceOptions.Location = New System.Drawing.Point(3, 18)
         Me.tblSourceOptions.Name = "tblSourceOptions"
-        Me.tblSourceOptions.RowCount = 6
+        Me.tblSourceOptions.RowCount = 7
+        Me.tblSourceOptions.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblSourceOptions.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblSourceOptions.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblSourceOptions.RowStyles.Add(New System.Windows.Forms.RowStyle())
@@ -334,6 +344,52 @@ Partial Class dlgSourceTVShow
         Me.chkSingle.Text = "Selected folder contains a single TV Show"
         Me.chkSingle.UseVisualStyleBackColor = True
         '
+        'chkUsePlexIgnore
+        '
+        Me.chkUsePlexIgnore.AutoSize = True
+        Me.chkUsePlexIgnore.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
+        Me.chkUsePlexIgnore.Location = New System.Drawing.Point(3, 3)
+        Me.chkUsePlexIgnore.Name = "chkUsePlexIgnore"
+        Me.chkUsePlexIgnore.Size = New System.Drawing.Size(160, 17)
+        Me.chkUsePlexIgnore.TabIndex = 16
+        'FIXME: i18n
+        Me.chkUsePlexIgnore.Text = "Respect .plexignore files"
+        Me.chkUsePlexIgnore.UseVisualStyleBackColor = True
+        '
+        'flpPlexIgnore
+        '
+        Me.flpPlexIgnore.AutoSize = True
+        Me.flpPlexIgnore.Controls.Add(Me.pbPlexIgnoreInfo)
+        Me.flpPlexIgnore.Controls.Add(Me.lnkPlexIgnoreInfo)
+        Me.flpPlexIgnore.Margin = New System.Windows.Forms.Padding(0)
+        Me.flpPlexIgnore.Name = "flpPlexIgnore"
+        Me.flpPlexIgnore.Size = New System.Drawing.Size(140, 20)
+        Me.flpPlexIgnore.TabIndex = 17
+        Me.flpPlexIgnore.WrapContents = False
+        '
+        'pbPlexIgnoreInfo
+        '
+        Me.pbPlexIgnoreInfo.Cursor = System.Windows.Forms.Cursors.Help
+        Me.pbPlexIgnoreInfo.Image = System.Drawing.SystemIcons.Information.ToBitmap()
+        Me.pbPlexIgnoreInfo.Margin = New System.Windows.Forms.Padding(0, 2, 4, 0)
+        Me.pbPlexIgnoreInfo.Name = "pbPlexIgnoreInfo"
+        Me.pbPlexIgnoreInfo.Size = New System.Drawing.Size(16, 16)
+        Me.pbPlexIgnoreInfo.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage
+        Me.pbPlexIgnoreInfo.TabIndex = 0
+        Me.pbPlexIgnoreInfo.TabStop = False
+        '
+        'lnkPlexIgnoreInfo
+        '
+        Me.lnkPlexIgnoreInfo.AutoSize = True
+        Me.lnkPlexIgnoreInfo.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
+        Me.lnkPlexIgnoreInfo.Margin = New System.Windows.Forms.Padding(0, 2, 0, 0)
+        Me.lnkPlexIgnoreInfo.Name = "lnkPlexIgnoreInfo"
+        Me.lnkPlexIgnoreInfo.Size = New System.Drawing.Size(120, 13)
+        Me.lnkPlexIgnoreInfo.TabIndex = 1
+        Me.lnkPlexIgnoreInfo.TabStop = True
+        'FIXME: i18n
+        Me.lnkPlexIgnoreInfo.Text = "What is .plexignore?"
+        '
         'pnlBottom
         '
         Me.pnlBottom.AutoSize = True
@@ -391,6 +447,9 @@ Partial Class dlgSourceTVShow
         Me.ShowInTaskbar = False
         Me.Text = "TV Source"
         CType(Me.pbValidSourceName, System.ComponentModel.ISupportInitialize).EndInit()
+        Me.flpPlexIgnore.ResumeLayout(False)
+        Me.flpPlexIgnore.PerformLayout()
+        CType(Me.pbPlexIgnoreInfo, System.ComponentModel.ISupportInitialize).EndInit()
         Me.pnlMain.ResumeLayout(False)
         Me.pnlMain.PerformLayout()
         Me.tblMain.ResumeLayout(False)
@@ -435,4 +494,9 @@ Partial Class dlgSourceTVShow
     Friend WithEvents tblBottom As System.Windows.Forms.TableLayoutPanel
     Friend WithEvents chkSingle As CheckBox
     Friend WithEvents pbValidSourcePath As PictureBox
+    Friend WithEvents chkUsePlexIgnore As System.Windows.Forms.CheckBox
+    Friend WithEvents flpPlexIgnore As System.Windows.Forms.FlowLayoutPanel
+    Friend WithEvents pbPlexIgnoreInfo As System.Windows.Forms.PictureBox
+    Friend WithEvents lnkPlexIgnoreInfo As System.Windows.Forms.LinkLabel
+    Friend ttPlexIgnore As System.Windows.Forms.ToolTip
 End Class

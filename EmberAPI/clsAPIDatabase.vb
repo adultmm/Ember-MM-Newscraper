@@ -438,6 +438,123 @@ Public Class Database
     End Function
 
     ''' <summary>
+    ''' Returns True if at least one movie exists in the database, optionally for a single source.
+    ''' </summary>
+    Public Function HasIndexedMovies(Optional ByVal SourceID As Long = -1) As Boolean
+        Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
+            If SourceID = -1 Then
+                SQLcommand.CommandText = "SELECT COUNT(*) FROM movie;"
+            Else
+                SQLcommand.CommandText = String.Format("SELECT COUNT(*) FROM movie WHERE idSource = {0};", SourceID)
+            End If
+            Return Convert.ToInt64(SQLcommand.ExecuteScalar()) > 0
+        End Using
+    End Function
+
+    ''' <summary>
+    ''' Returns True if at least one local TV episode file exists in the database, optionally for a single source.
+    ''' </summary>
+    Public Function HasIndexedTVEpisodes(Optional ByVal SourceID As Long = -1) As Boolean
+        Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
+            If SourceID = -1 Then
+                SQLcommand.CommandText = "SELECT COUNT(*) FROM files INNER JOIN episode ON (files.idFile = episode.idFile);"
+            Else
+                SQLcommand.CommandText = String.Format("SELECT COUNT(*) FROM files INNER JOIN episode ON (files.idFile = episode.idFile) WHERE episode.idSource = {0};", SourceID)
+            End If
+            Return Convert.ToInt64(SQLcommand.ExecuteScalar()) > 0
+        End Using
+    End Function
+
+    ''' <summary>
+    ''' Removes movie entries whose paths match .plexignore rules in their containing folder.
+    ''' Does not remove missing files or apply other Clean() rules.
+    ''' </summary>
+    ''' <returns>Number of movies deleted.</returns>
+    Public Function Clean_PlexIgnore_Movies(Optional ByVal SourceID As Long = -1) As Integer
+        Dim deleted As Integer = 0
+        Dim filterCache As New Dictionary(Of String, PlexIgnoreFilter)(StringComparer.OrdinalIgnoreCase)
+
+        logger.Info(String.Format("[Database] [Clean_PlexIgnore] Cleaning movies started (SourceID={0})", SourceID))
+
+        Using SQLtransaction As SQLiteTransaction = _myvideosDBConn.BeginTransaction()
+            Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
+                If SourceID = -1 Then
+                    SQLcommand.CommandText = "SELECT MoviePath, idMovie FROM movie;"
+                Else
+                    SQLcommand.CommandText = String.Format("SELECT MoviePath, idMovie FROM movie WHERE idSource = {0};", SourceID)
+                End If
+                Using SQLReader As SQLiteDataReader = SQLcommand.ExecuteReader()
+                    While SQLReader.Read
+                        Dim moviePath As String = SQLReader("MoviePath").ToString
+                        If IsPathIgnoredByPlexIgnore(moviePath, filterCache) Then
+                            logger.Info(String.Format("[Database] [Clean] [PlexIgnore] Deleting movie id={0} path=""{1}"" (.plexignore rule in ""{2}"")", SQLReader("idMovie"), moviePath, Path.GetDirectoryName(moviePath)))
+                            Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
+                            deleted += 1
+                        End If
+                    End While
+                End Using
+            End Using
+            SQLtransaction.Commit()
+        End Using
+
+        logger.Info(String.Format("[Database] [Clean_PlexIgnore] Cleaning movies done ({0} deleted)", deleted))
+        Return deleted
+    End Function
+
+    ''' <summary>
+    ''' Removes TV episode entries whose paths match .plexignore rules in their containing folder.
+    ''' Does not remove missing files or apply other Clean() rules.
+    ''' </summary>
+    ''' <returns>Number of episodes deleted.</returns>
+    Public Function Clean_PlexIgnore_TVShows(Optional ByVal SourceID As Long = -1) As Integer
+        Dim deleted As Integer = 0
+        Dim filterCache As New Dictionary(Of String, PlexIgnoreFilter)(StringComparer.OrdinalIgnoreCase)
+
+        logger.Info(String.Format("[Database] [Clean_PlexIgnore] Cleaning TV episodes started (SourceID={0})", SourceID))
+
+        Using SQLtransaction As SQLiteTransaction = _myvideosDBConn.BeginTransaction()
+            Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
+                If SourceID = -1 Then
+                    SQLcommand.CommandText = "SELECT files.strFilename, episode.idEpisode FROM files INNER JOIN episode ON (files.idFile = episode.idFile);"
+                Else
+                    SQLcommand.CommandText = String.Format("SELECT files.strFilename, episode.idEpisode FROM files INNER JOIN episode ON (files.idFile = episode.idFile) WHERE episode.idSource = {0};", SourceID)
+                End If
+                Using SQLReader As SQLiteDataReader = SQLcommand.ExecuteReader()
+                    While SQLReader.Read
+                        Dim episodePath As String = SQLReader("strFilename").ToString
+                        If IsPathIgnoredByPlexIgnore(episodePath, filterCache) Then
+                            logger.Info(String.Format("[Database] [Clean] [PlexIgnore] Deleting episode id={0} path=""{1}"" (.plexignore rule in ""{2}"")", SQLReader("idEpisode"), episodePath, Path.GetDirectoryName(episodePath)))
+                            Master.DB.Delete_TVEpisode(Convert.ToInt64(SQLReader("idEpisode")), False, False, True)
+                            deleted += 1
+                        End If
+                    End While
+                End Using
+            End Using
+            SQLtransaction.Commit()
+        End Using
+
+        If deleted > 0 Then
+            Delete_Empty_TVSeasons(-1, True)
+        End If
+
+        logger.Info(String.Format("[Database] [Clean_PlexIgnore] Cleaning TV episodes done ({0} deleted)", deleted))
+        Return deleted
+    End Function
+
+    Private Shared Function IsPathIgnoredByPlexIgnore(ByVal filePath As String, ByVal filterCache As Dictionary(Of String, PlexIgnoreFilter)) As Boolean
+        If String.IsNullOrEmpty(filePath) Then Return False
+        Dim fileDir As String = Path.GetDirectoryName(filePath)
+        If String.IsNullOrEmpty(fileDir) Then Return False
+
+        Dim filter As PlexIgnoreFilter = Nothing
+        If Not filterCache.TryGetValue(fileDir, filter) Then
+            filter = New PlexIgnoreFilter(fileDir)
+            filterCache(fileDir) = filter
+        End If
+        Return filter.IsIgnored(Path.GetFileName(filePath), False)
+    End Function
+
+    ''' <summary>
     ''' Iterates db entries to check if the paths to the movie or TV files are valid. 
     ''' If not, remove all entries pertaining to the movie.
     ''' </summary>
@@ -483,35 +600,45 @@ Public Class Database
                     End If
                     Using SQLReader As SQLiteDataReader = SQLcommand.ExecuteReader()
                         While SQLReader.Read
-                            If Not File.Exists(SQLReader("MoviePath").ToString) OrElse Not Master.eSettings.FileSystemValidExts.Contains(Path.GetExtension(SQLReader("MoviePath").ToString).ToLower) OrElse
-                                Master.DB.GetExcludedDirs.Exists(Function(s) SQLReader("MoviePath").ToString.ToLower.StartsWith(s.ToLower)) Then
-                                MoviePaths.Remove(SQLReader("MoviePath").ToString)
+                            Dim moviePath As String = SQLReader("MoviePath").ToString
+                            If Not File.Exists(moviePath) OrElse Not Master.eSettings.FileSystemValidExts.Contains(Path.GetExtension(moviePath).ToLower) OrElse
+                                Master.DB.GetExcludedDirs.Exists(Function(s) moviePath.ToLower.StartsWith(s.ToLower)) Then
+                                MoviePaths.Remove(moviePath)
+                                logger.Info(String.Format("[Database] [Clean] Deleting movie id={0} path=""{1}"" (missing file, invalid extension, or excluded dir)", SQLReader("idMovie"), moviePath))
                                 Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
-                            ElseIf Master.eSettings.MovieSkipLessThan > 0 Then
-                                fInfo = New FileInfo(SQLReader("MoviePath").ToString)
-                                If ((Not Master.eSettings.MovieSkipStackedSizeCheck OrElse Not FileUtils.Common.isStacked(fInfo.FullName)) AndAlso fInfo.Length < Master.eSettings.MovieSkipLessThan * 1048576) Then
-                                    MoviePaths.Remove(SQLReader("MoviePath").ToString)
-                                    Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
-                                End If
                             Else
                                 tSource = SourceList.OrderByDescending(Function(s) s.Path).FirstOrDefault(Function(s) s.ID = Convert.ToInt64(SQLReader("idSource")))
-                                If tSource IsNot Nothing Then
-                                    If Directory.GetParent(Directory.GetParent(SQLReader("MoviePath").ToString).FullName).Name.ToLower = "bdmv" Then
-                                        tPath = Directory.GetParent(Directory.GetParent(SQLReader("MoviePath").ToString).FullName).FullName
+                                If tSource IsNot Nothing AndAlso tSource.UsePlexIgnore AndAlso PlexIgnoreFilter.IsIgnoredFilePath(moviePath) Then
+                                    MoviePaths.Remove(moviePath)
+                                    logger.Info(String.Format("[Database] [Clean] [PlexIgnore] Deleting movie id={0} path=""{1}"" (.plexignore rule in ""{2}"")", SQLReader("idMovie"), moviePath, Path.GetDirectoryName(moviePath)))
+                                    Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
+                                ElseIf Master.eSettings.MovieSkipLessThan > 0 Then
+                                    fInfo = New FileInfo(moviePath)
+                                    If ((Not Master.eSettings.MovieSkipStackedSizeCheck OrElse Not FileUtils.Common.isStacked(fInfo.FullName)) AndAlso fInfo.Length < Master.eSettings.MovieSkipLessThan * 1048576) Then
+                                        MoviePaths.Remove(moviePath)
+                                        logger.Info(String.Format("[Database] [Clean] Deleting movie id={0} path=""{1}"" (file too small)", SQLReader("idMovie"), moviePath))
+                                        Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
+                                    End If
+                                ElseIf tSource IsNot Nothing Then
+                                    If Directory.GetParent(Directory.GetParent(moviePath).FullName).Name.ToLower = "bdmv" Then
+                                        tPath = Directory.GetParent(Directory.GetParent(moviePath).FullName).FullName
                                     Else
-                                        tPath = Directory.GetParent(SQLReader("MoviePath").ToString).FullName
+                                        tPath = Directory.GetParent(moviePath).FullName
                                     End If
                                     sPath = FileUtils.Common.GetDirectory(tPath).ToLower
                                     If Not tSource.Recursive AndAlso tPath.Length > tSource.Path.Length AndAlso If(sPath = "video_ts" OrElse sPath = "bdmv", tPath.Substring(tSource.Path.Length).Trim(Path.DirectorySeparatorChar).Split(Path.DirectorySeparatorChar).Count > 2, tPath.Substring(tSource.Path.Length).Trim(Path.DirectorySeparatorChar).Split(Path.DirectorySeparatorChar).Count > 1) Then
-                                        MoviePaths.Remove(SQLReader("MoviePath").ToString)
+                                        MoviePaths.Remove(moviePath)
+                                        logger.Info(String.Format("[Database] [Clean] Deleting movie id={0} path=""{1}"" (non-recursive source depth exceeded)", SQLReader("idMovie"), moviePath))
                                         Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
-                                    ElseIf Not Convert.ToBoolean(SQLReader("Type")) AndAlso EmberDirectoryOptions.GetInstance(tSource, tPath).GetIsSingle(tSource.IsSingle) AndAlso Not MoviePaths.Where(Function(s) SQLReader("MoviePath").ToString.ToLower.StartsWith(tSource.Path.ToLower)).Count = 1 Then
-                                        MoviePaths.Remove(SQLReader("MoviePath").ToString)
+                                    ElseIf Not Convert.ToBoolean(SQLReader("Type")) AndAlso EmberDirectoryOptions.GetInstance(tSource, tPath).GetIsSingle(tSource.IsSingle) AndAlso Not MoviePaths.Where(Function(s) moviePath.ToLower.StartsWith(tSource.Path.ToLower)).Count = 1 Then
+                                        MoviePaths.Remove(moviePath)
+                                        logger.Info(String.Format("[Database] [Clean] Deleting movie id={0} path=""{1}"" (isSingle duplicate in folder ""{2}"")", SQLReader("idMovie"), moviePath, tPath))
                                         Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
                                     End If
                                 Else
                                     'orphaned
-                                    MoviePaths.Remove(SQLReader("MoviePath").ToString)
+                                    MoviePaths.Remove(moviePath)
+                                    logger.Info(String.Format("[Database] [Clean] Deleting movie id={0} path=""{1}"" (orphaned source)", SQLReader("idMovie"), moviePath))
                                     Master.DB.Delete_Movie(Convert.ToInt64(SQLReader("idMovie")), True)
                                 End If
                             End If
@@ -538,18 +665,40 @@ Public Class Database
 
             If CleanTVShows Then
                 logger.Info("Cleaning tv shows started")
+                Dim TVSourceList As New List(Of DBSource)
+
                 Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
                     If SourceID = -1 Then
-                        SQLcommand.CommandText = "SELECT files.strFilename, episode.idEpisode FROM files INNER JOIN episode ON (files.idFile = episode.idFile) ORDER BY files.strFilename;"
+                        SQLcommand.CommandText = "SELECT * FROM tvshowsource;"
                     Else
-                        SQLcommand.CommandText = String.Format("SELECT files.strFilename, episode.idEpisode FROM files INNER JOIN episode ON (files.idFile = episode.idFile) WHERE episode.idSource = {0} ORDER BY files.strFilename;", SourceID)
+                        SQLcommand.CommandText = String.Format("SELECT * FROM tvshowsource WHERE idSource = {0}", SourceID)
+                    End If
+                    Using SQLreader As SQLiteDataReader = SQLcommand.ExecuteReader()
+                        While SQLreader.Read
+                            TVSourceList.Add(Load_Source_TVShow(Convert.ToInt64(SQLreader("idSource"))))
+                        End While
+                    End Using
+                End Using
+
+                Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
+                    If SourceID = -1 Then
+                        SQLcommand.CommandText = "SELECT files.strFilename, episode.idEpisode, episode.idSource FROM files INNER JOIN episode ON (files.idFile = episode.idFile) ORDER BY files.strFilename;"
+                    Else
+                        SQLcommand.CommandText = String.Format("SELECT files.strFilename, episode.idEpisode, episode.idSource FROM files INNER JOIN episode ON (files.idFile = episode.idFile) WHERE episode.idSource = {0} ORDER BY files.strFilename;", SourceID)
                     End If
 
                     Using SQLReader As SQLiteDataReader = SQLcommand.ExecuteReader()
                         While SQLReader.Read
-                            If Not File.Exists(SQLReader("strFilename").ToString) OrElse Not Master.eSettings.FileSystemValidExts.Contains(Path.GetExtension(SQLReader("strFilename").ToString).ToLower) OrElse
-                                Master.DB.GetExcludedDirs.Exists(Function(s) SQLReader("strFilename").ToString.ToLower.StartsWith(s.ToLower)) Then
+                            Dim episodePath As String = SQLReader("strFilename").ToString
+                            If Not File.Exists(episodePath) OrElse Not Master.eSettings.FileSystemValidExts.Contains(Path.GetExtension(episodePath).ToLower) OrElse
+                                Master.DB.GetExcludedDirs.Exists(Function(s) episodePath.ToLower.StartsWith(s.ToLower)) Then
                                 Master.DB.Delete_TVEpisode(Convert.ToInt64(SQLReader("idEpisode")), False, False, True)
+                            Else
+                                Dim tvSource As DBSource = TVSourceList.FirstOrDefault(Function(s) s.ID = Convert.ToInt64(SQLReader("idSource")))
+                                If tvSource IsNot Nothing AndAlso tvSource.UsePlexIgnore AndAlso PlexIgnoreFilter.IsIgnoredFilePath(episodePath) Then
+                                    logger.Info(String.Format("[Database] [Clean] [PlexIgnore] Deleting episode id={0} path=""{1}"" (.plexignore rule in ""{2}"")", SQLReader("idEpisode"), episodePath, Path.GetDirectoryName(episodePath)))
+                                    Master.DB.Delete_TVEpisode(Convert.ToInt64(SQLReader("idEpisode")), False, False, True)
+                                End If
                             End If
                         End While
                     End Using
@@ -1065,7 +1214,7 @@ Public Class Database
     Public Function Connect_MyVideos() As Boolean
 
         'set database version
-        Dim MyVideosDBVersion As Integer = 46
+        Dim MyVideosDBVersion As Integer = 47
 
         'set database filename
         Dim MyVideosDB As String = String.Format("MyVideos{0}.emm", MyVideosDBVersion)
@@ -1836,6 +1985,7 @@ Public Class Database
                     msource.GetYear = Convert.ToBoolean(SQLreader("bGetYear"))
                     msource.Language = SQLreader("strLanguage").ToString
                     msource.LastScan = SQLreader("strLastScan").ToString
+                    msource.UsePlexIgnore = Convert.ToBoolean(SQLreader("bUsePlexIgnore"))
                     lstSources.Add(msource)
                 End While
             End Using
@@ -1862,6 +2012,7 @@ Public Class Database
                     tvsource.EpisodeSorting = DirectCast(Convert.ToInt32(SQLreader("iEpisodeSorting")), Enums.EpisodeSorting)
                     tvsource.LastScan = SQLreader("strLastScan").ToString
                     tvsource.IsSingle = Convert.ToBoolean(SQLreader("bSingle"))
+                    tvsource.UsePlexIgnore = Convert.ToBoolean(SQLreader("bUsePlexIgnore"))
                     lstSources.Add(tvsource)
                 End While
             End Using
@@ -2472,6 +2623,7 @@ Public Class Database
                     _source.GetYear = Convert.ToBoolean(SQLreader("bGetYear"))
                     _source.Language = SQLreader("strLanguage").ToString
                     _source.LastScan = SQLreader("strLastScan").ToString
+                    _source.UsePlexIgnore = Convert.ToBoolean(SQLreader("bUsePlexIgnore"))
                 End If
             End Using
         End Using
@@ -3198,6 +3350,7 @@ Public Class Database
                     _source.EpisodeSorting = DirectCast(Convert.ToInt32(SQLreader("iEpisodeSorting")), Enums.EpisodeSorting)
                     _source.LastScan = SQLreader("strLastScan").ToString
                     _source.IsSingle = Convert.ToBoolean(SQLreader("bSingle"))
+                    _source.UsePlexIgnore = Convert.ToBoolean(SQLreader("bUsePlexIgnore"))
                 End If
             End Using
         End Using
@@ -4120,6 +4273,9 @@ Public Class Database
     Public Function Save_Movie(ByVal _movieDB As DBElement, ByVal bBatchMode As Boolean, ByVal bToNFO As Boolean, ByVal bToDisk As Boolean, ByVal bDoSync As Boolean, ByVal bForceFileCleanup As Boolean) As DBElement
         If _movieDB.Movie Is Nothing Then Return _movieDB
 
+        logger.Info(String.Format("[Database] [Save_Movie] {0} path=""{1}"" idMovie={2}",
+                                  If(_movieDB.IDSpecified, "UPDATE", "INSERT"), _movieDB.Filename, If(_movieDB.IDSpecified, _movieDB.ID.ToString(), "new")))
+
         Dim params = New List(Of Object)(New Object() {bToNFO, bToDisk, bDoSync, bForceFileCleanup})
         ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.OnBeforeSave_Movie, params, Nothing, False, _movieDB)
 
@@ -4362,6 +4518,7 @@ Public Class Database
                 Using rdrMovie As SQLiteDataReader = SQLcommand_movie.ExecuteReader()
                     If rdrMovie.Read Then
                         _movieDB.ID = Convert.ToInt64(rdrMovie(0))
+                        logger.Info(String.Format("[Database] [Save_Movie] INSERT complete path=""{0}"" idMovie={1}", _movieDB.Filename, _movieDB.ID))
                     Else
                         logger.Error("Something very wrong here: SaveMovieToDB", _movieDB.ToString)
                         _movieDB.ID = -1
@@ -4370,6 +4527,7 @@ Public Class Database
                 End Using
             Else
                 SQLcommand_movie.ExecuteNonQuery()
+                logger.Info(String.Format("[Database] [Save_Movie] UPDATE complete path=""{0}"" idMovie={1}", _movieDB.Filename, _movieDB.ID))
             End If
 
             If _movieDB.IDSpecified Then
@@ -6688,6 +6846,7 @@ Public Class Database
         Private _path As String
         Private _recursive As Boolean
         Private _usefoldername As Boolean
+        Private _useplexignore As Boolean
 
 #End Region 'Fields
 
@@ -6839,6 +6998,15 @@ Public Class Database
             End Set
         End Property
 
+        Public Property UsePlexIgnore() As Boolean
+            Get
+                Return _useplexignore
+            End Get
+            Set(ByVal value As Boolean)
+                _useplexignore = value
+            End Set
+        End Property
+
 #End Region 'Properties
 
 #Region "Methods"
@@ -6856,6 +7024,7 @@ Public Class Database
             _path = String.Empty
             _recursive = False
             _usefoldername = False
+            _useplexignore = False
         End Sub
 
 #End Region 'Methods

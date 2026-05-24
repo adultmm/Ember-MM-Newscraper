@@ -219,6 +219,15 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property MovieAskPlexIgnoreCleanPrompt() As Boolean
+        Get
+            Return Settings._XMLSettings.MovieAskPlexIgnoreCleanPrompt
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.MovieAskPlexIgnoreCleanPrompt = value
+        End Set
+    End Property
+
     Public Property MovieSetCleanDB() As Boolean
         Get
             Return Settings._XMLSettings.MovieSetCleanDB
@@ -4258,6 +4267,15 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property TVAskPlexIgnoreCleanPrompt() As Boolean
+        Get
+            Return Settings._XMLSettings.TVAskPlexIgnoreCleanPrompt
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.TVAskPlexIgnoreCleanPrompt = value
+        End Set
+    End Property
+
     Public Property GeneralTVEpisodeTheme() As String
         Get
             Return Settings._XMLSettings.GeneralTVEpisodeTheme
@@ -7088,6 +7106,7 @@ Public Class Settings
         MovieBannerResize = False
         MovieBannerWidth = 0
         MovieCleanDB = False
+        MovieAskPlexIgnoreCleanPrompt = True
         MovieClearArtKeepExisting = False
         MovieClearLogoKeepExisting = False
         MovieClickScrape = False
@@ -7339,6 +7358,7 @@ Public Class Settings
         TVAllSeasonsPosterResize = False
         TVAllSeasonsPosterWidth = 0
         TVCleanDB = False
+        TVAskPlexIgnoreCleanPrompt = True
         TVDisplayMissingEpisodes = True
         TVDisplayStatus = False
         TVEpisodeActorThumbsExtExpert = ".jpg"

@@ -99,6 +99,7 @@ Partial Public Class clsXMLSettings
     Private _moviebannerresize As Boolean
     Private _moviebannerwidth As Integer
     Private _moviecleandb As Boolean
+    Private _movieaskplexignorecleanprompt As Boolean = True
     Private _movieclearartkeepexisting As Boolean
     Private _movieclearlogokeepexisting As Boolean
     Private _movieclickscrape As Boolean
@@ -349,6 +350,7 @@ Partial Public Class clsXMLSettings
     Private _tvallseasonsposterresize As Boolean
     Private _tvallseasonsposterwidth As Integer
     Private _tvcleandb As Boolean
+    Private _tvaskplexignorecleanprompt As Boolean = True
     Private _tvdisplaymissingepisodes As Boolean
     Private _tvdisplaystatus As Boolean
     Private _tvepisodeactorthumbskeepexisting As Boolean
@@ -1179,6 +1181,15 @@ Partial Public Class clsXMLSettings
         End Get
         Set(ByVal value As Boolean)
             Me._moviecleandb = value
+        End Set
+    End Property
+
+    Public Property MovieAskPlexIgnoreCleanPrompt() As Boolean
+        Get
+            Return Me._movieaskplexignorecleanprompt
+        End Get
+        Set(ByVal value As Boolean)
+            Me._movieaskplexignorecleanprompt = value
         End Set
     End Property
 
@@ -5137,6 +5148,15 @@ Partial Public Class clsXMLSettings
         End Get
         Set(ByVal value As Boolean)
             Me._tvcleandb = value
+        End Set
+    End Property
+
+    Public Property TVAskPlexIgnoreCleanPrompt() As Boolean
+        Get
+            Return Me._tvaskplexignorecleanprompt
+        End Get
+        Set(ByVal value As Boolean)
+            Me._tvaskplexignorecleanprompt = value
         End Set
     End Property
 

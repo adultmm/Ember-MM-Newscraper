@@ -201,6 +201,7 @@ Partial Class dlgSettings
         Me.colMovieSourcesSingle = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colMovieSourcesExclude = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colMovieSourcesGetYear = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.colMovieSourcesPlexIgnore = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.btnMovieSourceRemove = New System.Windows.Forms.Button()
         Me.btnMovieSourceAdd = New System.Windows.Forms.Button()
         Me.btnOK = New System.Windows.Forms.Button()
@@ -612,6 +613,7 @@ Partial Class dlgSettings
         Me.gbMovieSourcesMiscOpts = New System.Windows.Forms.GroupBox()
         Me.tblMovieSourcesMiscOpts = New System.Windows.Forms.TableLayoutPanel()
         Me.chkMovieCleanDB = New System.Windows.Forms.CheckBox()
+        Me.chkMovieAskPlexIgnoreCleanPrompt = New System.Windows.Forms.CheckBox()
         Me.chkMovieScanOrderModify = New System.Windows.Forms.CheckBox()
         Me.lblMovieSkipLessThan = New System.Windows.Forms.Label()
         Me.chkMovieGeneralIgnoreLastScan = New System.Windows.Forms.CheckBox()
@@ -727,6 +729,7 @@ Partial Class dlgSettings
         Me.colTVSourcesExclude = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colTVSourcesSorting = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.colTVSourcesSingle = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
+        Me.colTVSourcesPlexIgnore = CType(New System.Windows.Forms.ColumnHeader(), System.Windows.Forms.ColumnHeader)
         Me.gbTVSourcesFilenamingOpts = New System.Windows.Forms.GroupBox()
         Me.tcTVSourcesFileNaming = New System.Windows.Forms.TabControl()
         Me.tpTVSourcesFileNamingKodi = New System.Windows.Forms.TabPage()
@@ -925,6 +928,7 @@ Partial Class dlgSettings
         Me.gbTVSourcesMiscOpts = New System.Windows.Forms.GroupBox()
         Me.tblTVSourcesMiscOpts = New System.Windows.Forms.TableLayoutPanel()
         Me.chkTVCleanDB = New System.Windows.Forms.CheckBox()
+        Me.chkTVAskPlexIgnoreCleanPrompt = New System.Windows.Forms.CheckBox()
         Me.chkTVScanOrderModify = New System.Windows.Forms.CheckBox()
         Me.lblTVSkipLessThanMB = New System.Windows.Forms.Label()
         Me.chkTVGeneralIgnoreLastScan = New System.Windows.Forms.CheckBox()
@@ -4234,7 +4238,7 @@ Partial Class dlgSettings
         '
         'lvMovieSources
         '
-        Me.lvMovieSources.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.colMovieSourcesID, Me.colMovieSourcesName, Me.colMovieSourcesPath, Me.colMovieSourcesLanguage, Me.colMovieSourcesRecur, Me.colMovieSourcesFolder, Me.colMovieSourcesSingle, Me.colMovieSourcesExclude, Me.colMovieSourcesGetYear})
+        Me.lvMovieSources.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.colMovieSourcesID, Me.colMovieSourcesName, Me.colMovieSourcesPath, Me.colMovieSourcesLanguage, Me.colMovieSourcesRecur, Me.colMovieSourcesFolder, Me.colMovieSourcesSingle, Me.colMovieSourcesExclude, Me.colMovieSourcesGetYear, Me.colMovieSourcesPlexIgnore})
         Me.tblMovieSources.SetColumnSpan(Me.lvMovieSources, 2)
         Me.lvMovieSources.Dock = System.Windows.Forms.DockStyle.Fill
         Me.lvMovieSources.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
@@ -4290,6 +4294,11 @@ Partial Class dlgSettings
         'colMovieSourcesGetYear
         '
         Me.colMovieSourcesGetYear.Text = "Get Year"
+        '
+        'colMovieSourcesPlexIgnore
+        '
+        Me.colMovieSourcesPlexIgnore.Text = "Respect .plexignore"
+        Me.colMovieSourcesPlexIgnore.Width = 115
         '
         'btnMovieSourceRemove
         '
@@ -9611,6 +9620,7 @@ Partial Class dlgSettings
         Me.tblMovieSourcesMiscOpts.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
         Me.tblMovieSourcesMiscOpts.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
         Me.tblMovieSourcesMiscOpts.Controls.Add(Me.chkMovieCleanDB, 0, 5)
+        Me.tblMovieSourcesMiscOpts.Controls.Add(Me.chkMovieAskPlexIgnoreCleanPrompt, 0, 6)
         Me.tblMovieSourcesMiscOpts.Controls.Add(Me.chkMovieScanOrderModify, 0, 4)
         Me.tblMovieSourcesMiscOpts.Controls.Add(Me.lblMovieSkipLessThan, 0, 0)
         Me.tblMovieSourcesMiscOpts.Controls.Add(Me.chkMovieGeneralIgnoreLastScan, 0, 3)
@@ -9621,7 +9631,8 @@ Partial Class dlgSettings
         Me.tblMovieSourcesMiscOpts.Dock = System.Windows.Forms.DockStyle.Fill
         Me.tblMovieSourcesMiscOpts.Location = New System.Drawing.Point(3, 18)
         Me.tblMovieSourcesMiscOpts.Name = "tblMovieSourcesMiscOpts"
-        Me.tblMovieSourcesMiscOpts.RowCount = 7
+        Me.tblMovieSourcesMiscOpts.RowCount = 8
+        Me.tblMovieSourcesMiscOpts.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblMovieSourcesMiscOpts.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblMovieSourcesMiscOpts.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblMovieSourcesMiscOpts.RowStyles.Add(New System.Windows.Forms.RowStyle())
@@ -9644,6 +9655,19 @@ Partial Class dlgSettings
         Me.chkMovieCleanDB.TabIndex = 9
         Me.chkMovieCleanDB.Text = "Clean database after updating library"
         Me.chkMovieCleanDB.UseVisualStyleBackColor = True
+        '
+        'chkMovieAskPlexIgnoreCleanPrompt
+        '
+        Me.chkMovieAskPlexIgnoreCleanPrompt.Anchor = System.Windows.Forms.AnchorStyles.Left
+        Me.chkMovieAskPlexIgnoreCleanPrompt.AutoSize = True
+        Me.tblMovieSourcesMiscOpts.SetColumnSpan(Me.chkMovieAskPlexIgnoreCleanPrompt, 3)
+        Me.chkMovieAskPlexIgnoreCleanPrompt.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.chkMovieAskPlexIgnoreCleanPrompt.Location = New System.Drawing.Point(3, 146)
+        Me.chkMovieAskPlexIgnoreCleanPrompt.Name = "chkMovieAskPlexIgnoreCleanPrompt"
+        Me.chkMovieAskPlexIgnoreCleanPrompt.Size = New System.Drawing.Size(289, 17)
+        Me.chkMovieAskPlexIgnoreCleanPrompt.TabIndex = 10
+        Me.chkMovieAskPlexIgnoreCleanPrompt.Text = "Ask to remove indexed entries when enabling .plexignore on a source"
+        Me.chkMovieAskPlexIgnoreCleanPrompt.UseVisualStyleBackColor = True
         '
         'chkMovieScanOrderModify
         '
@@ -10982,7 +11006,7 @@ Partial Class dlgSettings
         '
         'lvTVSources
         '
-        Me.lvTVSources.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.colTVSourcesID, Me.colTVSourcesName, Me.colTVSourcesPath, Me.colTVSourcesLanguage, Me.colTVSourcesOrdering, Me.colTVSourcesExclude, Me.colTVSourcesSorting, Me.colTVSourcesSingle})
+        Me.lvTVSources.Columns.AddRange(New System.Windows.Forms.ColumnHeader() {Me.colTVSourcesID, Me.colTVSourcesName, Me.colTVSourcesPath, Me.colTVSourcesLanguage, Me.colTVSourcesOrdering, Me.colTVSourcesExclude, Me.colTVSourcesSorting, Me.colTVSourcesSingle, Me.colTVSourcesPlexIgnore})
         Me.tblTVSourcesGeneral.SetColumnSpan(Me.lvTVSources, 2)
         Me.lvTVSources.Dock = System.Windows.Forms.DockStyle.Fill
         Me.lvTVSources.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
@@ -11032,6 +11056,11 @@ Partial Class dlgSettings
         'colTVSourcesSingle
         '
         Me.colTVSourcesSingle.Text = "Single TV Show"
+        '
+        'colTVSourcesPlexIgnore
+        '
+        Me.colTVSourcesPlexIgnore.Text = "Respect .plexignore"
+        Me.colTVSourcesPlexIgnore.Width = 115
         '
         'gbTVSourcesFilenamingOpts
         '
@@ -13505,6 +13534,7 @@ Partial Class dlgSettings
         Me.tblTVSourcesMiscOpts.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
         Me.tblTVSourcesMiscOpts.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
         Me.tblTVSourcesMiscOpts.Controls.Add(Me.chkTVCleanDB, 0, 3)
+        Me.tblTVSourcesMiscOpts.Controls.Add(Me.chkTVAskPlexIgnoreCleanPrompt, 0, 4)
         Me.tblTVSourcesMiscOpts.Controls.Add(Me.chkTVScanOrderModify, 0, 2)
         Me.tblTVSourcesMiscOpts.Controls.Add(Me.lblTVSkipLessThanMB, 2, 0)
         Me.tblTVSourcesMiscOpts.Controls.Add(Me.chkTVGeneralIgnoreLastScan, 0, 1)
@@ -13513,7 +13543,8 @@ Partial Class dlgSettings
         Me.tblTVSourcesMiscOpts.Dock = System.Windows.Forms.DockStyle.Fill
         Me.tblTVSourcesMiscOpts.Location = New System.Drawing.Point(3, 18)
         Me.tblTVSourcesMiscOpts.Name = "tblTVSourcesMiscOpts"
-        Me.tblTVSourcesMiscOpts.RowCount = 5
+        Me.tblTVSourcesMiscOpts.RowCount = 6
+        Me.tblTVSourcesMiscOpts.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblTVSourcesMiscOpts.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblTVSourcesMiscOpts.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblTVSourcesMiscOpts.RowStyles.Add(New System.Windows.Forms.RowStyle())
@@ -13536,6 +13567,21 @@ Partial Class dlgSettings
         Me.chkTVCleanDB.Text = "Clean database after updating library"
         Me.chkTVCleanDB.TextAlign = System.Drawing.ContentAlignment.TopLeft
         Me.chkTVCleanDB.UseVisualStyleBackColor = True
+        '
+        'chkTVAskPlexIgnoreCleanPrompt
+        '
+        Me.chkTVAskPlexIgnoreCleanPrompt.Anchor = System.Windows.Forms.AnchorStyles.Left
+        Me.chkTVAskPlexIgnoreCleanPrompt.AutoSize = True
+        Me.chkTVAskPlexIgnoreCleanPrompt.CheckAlign = System.Drawing.ContentAlignment.TopLeft
+        Me.tblTVSourcesMiscOpts.SetColumnSpan(Me.chkTVAskPlexIgnoreCleanPrompt, 3)
+        Me.chkTVAskPlexIgnoreCleanPrompt.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.chkTVAskPlexIgnoreCleanPrompt.Location = New System.Drawing.Point(3, 100)
+        Me.chkTVAskPlexIgnoreCleanPrompt.Name = "chkTVAskPlexIgnoreCleanPrompt"
+        Me.chkTVAskPlexIgnoreCleanPrompt.Size = New System.Drawing.Size(289, 17)
+        Me.chkTVAskPlexIgnoreCleanPrompt.TabIndex = 6
+        Me.chkTVAskPlexIgnoreCleanPrompt.Text = "Ask to remove indexed entries when enabling .plexignore on a source"
+        Me.chkTVAskPlexIgnoreCleanPrompt.TextAlign = System.Drawing.ContentAlignment.TopLeft
+        Me.chkTVAskPlexIgnoreCleanPrompt.UseVisualStyleBackColor = True
         '
         'chkTVScanOrderModify
         '
@@ -23848,6 +23894,7 @@ End Sub
     Friend WithEvents btnRemTVSource As System.Windows.Forms.Button
     Friend WithEvents btnTVSourceAdd As System.Windows.Forms.Button
     Friend WithEvents chkMovieCleanDB As System.Windows.Forms.CheckBox
+    Friend WithEvents chkMovieAskPlexIgnoreCleanPrompt As System.Windows.Forms.CheckBox
     Friend WithEvents chkMovieGeneralIgnoreLastScan As System.Windows.Forms.CheckBox
     Friend WithEvents pnlTVGeneral As System.Windows.Forms.Panel
     Friend WithEvents gbTVEpisodeFilterOpts As System.Windows.Forms.GroupBox
@@ -23877,6 +23924,7 @@ End Sub
     Friend WithEvents gbTVSourcesMiscOpts As System.Windows.Forms.GroupBox
     Friend WithEvents chkTVGeneralIgnoreLastScan As System.Windows.Forms.CheckBox
     Friend WithEvents chkTVCleanDB As System.Windows.Forms.CheckBox
+    Friend WithEvents chkTVAskPlexIgnoreCleanPrompt As System.Windows.Forms.CheckBox
     Friend WithEvents gbGeneralInterface As System.Windows.Forms.GroupBox
     Friend WithEvents cbGeneralTVEpisodeTheme As System.Windows.Forms.ComboBox
     Friend WithEvents lblGeneralTVEpisodeTheme As System.Windows.Forms.Label
@@ -24988,6 +25036,7 @@ End Sub
     Friend WithEvents chkGeneralDigitGrpSymbolVotes As System.Windows.Forms.CheckBox
     Friend WithEvents btnGeneralDigitGrpSymbolSettings As System.Windows.Forms.Button
     Friend WithEvents colMovieSourcesGetYear As System.Windows.Forms.ColumnHeader
+    Friend WithEvents colMovieSourcesPlexIgnore As System.Windows.Forms.ColumnHeader
     Friend WithEvents chkMovieImagesDisplayImageSelect As System.Windows.Forms.CheckBox
     Friend WithEvents lblTVScraperGlobalLanguageA As System.Windows.Forms.Label
     Friend WithEvents lblTVScraperGlobalLanguageV As System.Windows.Forms.Label
@@ -25290,6 +25339,7 @@ End Sub
     Friend WithEvents chkMovieSetImagesForceLanguage As CheckBox
     Friend WithEvents cbMovieSetImagesForcedLanguage As ComboBox
     Friend WithEvents colTVSourcesSingle As ColumnHeader
+    Friend WithEvents colTVSourcesPlexIgnore As ColumnHeader
     Friend WithEvents gbMovieScraperCollectionOpts As GroupBox
     Friend WithEvents tblMovieScraperCollectionOpts As TableLayoutPanel
     Friend WithEvents chkMovieScraperCollectionsExtendedInfo As CheckBox

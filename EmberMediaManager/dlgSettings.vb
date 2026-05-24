@@ -70,6 +70,20 @@ Public Class dlgSettings
         Return sResult
     End Function
 
+    Private Sub ApplyPlexIgnoreCleanFromMovieSource(ByVal dMovieSource As dlgSourceMovie, ByVal sourceId As Long)
+        If dMovieSource.RequestPlexIgnoreClean Then
+            sResult.NeedsPlexIgnoreClean_Movie = True
+            sResult.PlexIgnoreCleanSourceId_Movie = sourceId
+        End If
+    End Sub
+
+    Private Sub ApplyPlexIgnoreCleanFromTVSource(ByVal dTVSource As dlgSourceTVShow, ByVal sourceId As Long)
+        If dTVSource.RequestPlexIgnoreClean Then
+            sResult.NeedsPlexIgnoreClean_TV = True
+            sResult.PlexIgnoreCleanSourceId_TV = sourceId
+        End If
+    End Sub
+
     Private Sub dlgSettings_SizeChanged(sender As Object, e As EventArgs) Handles MyBase.SizeChanged
         Dim iBackground As New Bitmap(pnlSettingsTop.Width, pnlSettingsTop.Height)
         Using g As Graphics = Graphics.FromImage(iBackground)
@@ -809,6 +823,8 @@ Public Class dlgSettings
             sResult.NeedsDBClean_TV OrElse
             sResult.NeedsDBUpdate_Movie OrElse
             sResult.NeedsDBUpdate_TV OrElse
+            sResult.NeedsPlexIgnoreClean_Movie OrElse
+            sResult.NeedsPlexIgnoreClean_TV OrElse
             sResult.NeedsReload_Movie OrElse
             sResult.NeedsReload_MovieSet OrElse
             sResult.NeedsReload_TVShow Then _
@@ -924,9 +940,11 @@ Public Class dlgSettings
 
     Private Sub btnMovieSourceEdit_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnMovieSourceEdit.Click
         If lvMovieSources.SelectedItems.Count > 0 Then
+            Dim sourceId As Long = Convert.ToInt64(lvMovieSources.SelectedItems(0).Text)
             Using dMovieSource As New dlgSourceMovie
-                If dMovieSource.ShowDialog(Convert.ToInt32(lvMovieSources.SelectedItems(0).Text)) = DialogResult.OK Then
+                If dMovieSource.ShowDialog(CInt(sourceId)) = DialogResult.OK Then
                     RefreshMovieSources()
+                    ApplyPlexIgnoreCleanFromMovieSource(dMovieSource, sourceId)
                     sResult.NeedsReload_Movie = True 'TODO: Check if we have to use Reload or DBUpdate
                     SetApplyButton(True)
                 End If
@@ -958,9 +976,11 @@ Public Class dlgSettings
 
     Private Sub btnTVSourceEdit_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnTVSourceEdit.Click
         If lvTVSources.SelectedItems.Count > 0 Then
+            Dim sourceId As Long = Convert.ToInt64(lvTVSources.SelectedItems(0).Text)
             Using dTVSource As New dlgSourceTVShow
-                If dTVSource.ShowDialog(Convert.ToInt32(lvTVSources.SelectedItems(0).Text)) = DialogResult.OK Then
+                If dTVSource.ShowDialog(CInt(sourceId)) = DialogResult.OK Then
                     RefreshTVSources()
+                    ApplyPlexIgnoreCleanFromTVSource(dTVSource, sourceId)
                     sResult.NeedsReload_TVShow = True
                     SetApplyButton(True)
                 End If
@@ -2936,6 +2956,7 @@ Public Class dlgSettings
                 txtMovieBannerWidth.Text = .MovieBannerWidth.ToString
             End If
             chkMovieCleanDB.Checked = .MovieCleanDB
+            chkMovieAskPlexIgnoreCleanPrompt.Checked = .MovieAskPlexIgnoreCleanPrompt
             chkMovieClearArtKeepExisting.Checked = .MovieClearArtKeepExisting
             chkMovieClearLogoKeepExisting.Checked = .MovieClearLogoKeepExisting
             chkMovieClickScrape.Checked = .MovieClickScrape
@@ -3123,6 +3144,7 @@ Public Class dlgSettings
                 txtTVAllSeasonsPosterWidth.Text = .TVAllSeasonsPosterWidth.ToString
             End If
             chkTVCleanDB.Checked = .TVCleanDB
+            chkTVAskPlexIgnoreCleanPrompt.Checked = .TVAskPlexIgnoreCleanPrompt
             chkTVDisplayMissingEpisodes.Checked = .TVDisplayMissingEpisodes
             chkTVDisplayStatus.Checked = .TVDisplayStatus
             chkTVEpisodeFanartKeepExisting.Checked = .TVEpisodeFanartKeepExisting
@@ -3904,6 +3926,10 @@ Public Class dlgSettings
         sResult.NeedsReload_MovieSet = False
         sResult.NeedsReload_TVEpisode = False
         sResult.NeedsReload_TVShow = False
+        sResult.NeedsPlexIgnoreClean_Movie = False
+        sResult.NeedsPlexIgnoreClean_TV = False
+        sResult.PlexIgnoreCleanSourceId_Movie = -1
+        sResult.PlexIgnoreCleanSourceId_TV = -1
         sResult.DidCancel = False
         didApply = False
         NoUpdate = False
@@ -4540,9 +4566,11 @@ Public Class dlgSettings
 
     Private Sub lvMovieSources_DoubleClick(ByVal sender As Object, ByVal e As EventArgs) Handles lvMovieSources.DoubleClick
         If lvMovieSources.SelectedItems.Count > 0 Then
+            Dim sourceId As Long = Convert.ToInt64(lvMovieSources.SelectedItems(0).Text)
             Using dMovieSource As New dlgSourceMovie
-                If dMovieSource.ShowDialog(Convert.ToInt32(lvMovieSources.SelectedItems(0).Text)) = DialogResult.OK Then
+                If dMovieSource.ShowDialog(CInt(sourceId)) = DialogResult.OK Then
                     RefreshMovieSources()
+                    ApplyPlexIgnoreCleanFromMovieSource(dMovieSource, sourceId)
                     sResult.NeedsReload_Movie = True 'TODO: Check if we have to use Reload or DBUpdate
                     SetApplyButton(True)
                 End If
@@ -4572,9 +4600,11 @@ Public Class dlgSettings
 
     Private Sub lvTVSources_DoubleClick(ByVal sender As Object, ByVal e As EventArgs) Handles lvTVSources.DoubleClick
         If lvTVSources.SelectedItems.Count > 0 Then
+            Dim sourceId As Long = Convert.ToInt64(lvTVSources.SelectedItems(0).Text)
             Using dTVSource As New dlgSourceTVShow
-                If dTVSource.ShowDialog(Convert.ToInt32(lvTVSources.SelectedItems(0).Text)) = DialogResult.OK Then
+                If dTVSource.ShowDialog(CInt(sourceId)) = DialogResult.OK Then
                     RefreshTVSources()
+                    ApplyPlexIgnoreCleanFromTVSource(dTVSource, sourceId)
                     sResult.NeedsReload_TVShow = True
                     SetApplyButton(True)
                 End If
@@ -4635,6 +4665,7 @@ Public Class dlgSettings
             lvItem.SubItems.Add(If(s.IsSingle, Master.eLang.GetString(300, "Yes"), Master.eLang.GetString(720, "No")))
             lvItem.SubItems.Add(If(s.Exclude, Master.eLang.GetString(300, "Yes"), Master.eLang.GetString(720, "No")))
             lvItem.SubItems.Add(If(s.GetYear, Master.eLang.GetString(300, "Yes"), Master.eLang.GetString(720, "No")))
+            lvItem.SubItems.Add(If(s.UsePlexIgnore, Master.eLang.GetString(300, "Yes"), Master.eLang.GetString(720, "No")))
             lvMovieSources.Items.Add(lvItem)
         Next
     End Sub
@@ -4651,6 +4682,7 @@ Public Class dlgSettings
             lvItem.SubItems.Add(If(s.Exclude, Master.eLang.GetString(300, "Yes"), Master.eLang.GetString(720, "No")))
             lvItem.SubItems.Add(s.EpisodeSorting.ToString)
             lvItem.SubItems.Add(If(s.IsSingle, Master.eLang.GetString(300, "Yes"), Master.eLang.GetString(720, "No")))
+            lvItem.SubItems.Add(If(s.UsePlexIgnore, Master.eLang.GetString(300, "Yes"), Master.eLang.GetString(720, "No")))
             lvTVSources.Items.Add(lvItem)
         Next
     End Sub
@@ -4982,6 +5014,7 @@ Public Class dlgSettings
             .MovieBannerResize = chkMovieBannerResize.Checked
             .MovieBannerWidth = If(Not String.IsNullOrEmpty(txtMovieBannerWidth.Text), Convert.ToInt32(txtMovieBannerWidth.Text), 0)
             .MovieCleanDB = chkMovieCleanDB.Checked
+            .MovieAskPlexIgnoreCleanPrompt = chkMovieAskPlexIgnoreCleanPrompt.Checked
             .MovieClearArtKeepExisting = chkMovieClearArtKeepExisting.Checked
             .MovieClearLogoKeepExisting = chkMovieClearLogoKeepExisting.Checked
             .MovieClickScrape = chkMovieClickScrape.Checked
@@ -5225,6 +5258,7 @@ Public Class dlgSettings
             .TVAllSeasonsPosterResize = chkTVAllSeasonsPosterResize.Checked
             .TVAllSeasonsPosterWidth = If(Not String.IsNullOrEmpty(txtTVAllSeasonsPosterWidth.Text), Convert.ToInt32(txtTVAllSeasonsPosterWidth.Text), 0)
             .TVCleanDB = chkTVCleanDB.Checked
+            .TVAskPlexIgnoreCleanPrompt = chkTVAskPlexIgnoreCleanPrompt.Checked
             .TVDisplayMissingEpisodes = chkTVDisplayMissingEpisodes.Checked
             .TVDisplayStatus = chkTVDisplayStatus.Checked
             .TVEpisodeFanartHeight = If(Not String.IsNullOrEmpty(txtTVEpisodeFanartHeight.Text), Convert.ToInt32(txtTVEpisodeFanartHeight.Text), 0)
@@ -6268,6 +6302,11 @@ Public Class dlgSettings
         Dim strGetYear As String = Master.eLang.GetString(586, "Get Year")
         colMovieSourcesGetYear.Text = strGetYear
 
+        'FIXME: i18n
+        colMovieSourcesPlexIgnore.Text = "Respect .plexignore"
+        'FIXME: i18n
+        colTVSourcesPlexIgnore.Text = "Respect .plexignore"
+
         'Hide
         Dim strHide As String = Master.eLang.GetString(465, "Hide")
         colMovieGeneralMediaListSortingHide.Text = strHide
@@ -6878,6 +6917,8 @@ Public Class dlgSettings
         chkGeneralSourceFromFolder.Text = Master.eLang.GetString(711, "Include Folder Name in Source Type Check")
         chkMovieSourcesBackdropsAuto.Text = Master.eLang.GetString(521, "Automatically Save Fanart To Backdrops Folder")
         chkMovieCleanDB.Text = Master.eLang.GetString(668, "Clean database after updating library")
+        'FIXME: i18n
+        chkMovieAskPlexIgnoreCleanPrompt.Text = "Ask to remove indexed entries when enabling .plexignore on a source"
         chkMovieDisplayYear.Text = Master.eLang.GetString(464, "Display Year in List Title")
         chkMovieExtrathumbsCreatorAutoThumbs.Text = Master.eLang.GetString(1475, "Create thumbs instead of using fanarts")
         chkMovieExtrathumbsCreatorNoBlackBars.Text = Master.eLang.GetString(1474, "Remove Black Bars")
@@ -6996,6 +7037,8 @@ Public Class dlgSettings
         chkMovieUnstackExpertSingle.Text = chkMovieUnstackExpertMulti.Text
         chkMovieUseBaseDirectoryExpertVTS.Text = chkMovieUseBaseDirectoryExpertBDMV.Text
         chkTVCleanDB.Text = chkMovieCleanDB.Text
+        'FIXME: i18n
+        chkTVAskPlexIgnoreCleanPrompt.Text = chkMovieAskPlexIgnoreCleanPrompt.Text
         chkTVEpisodeProperCase.Text = chkMovieProperCase.Text
         chkTVGeneralIgnoreLastScan.Text = chkMovieGeneralIgnoreLastScan.Text
         chkTVScanOrderModify.Text = chkMovieScanOrderModify.Text

@@ -31,6 +31,7 @@ Public Class frmMain
 
     Friend WithEvents bwCheckVersion As New ComponentModel.BackgroundWorker
     Friend WithEvents bwCleanDB As New ComponentModel.BackgroundWorker
+    Friend WithEvents bwPlexIgnoreClean As New ComponentModel.BackgroundWorker
     Friend WithEvents bwDownloadPic As New ComponentModel.BackgroundWorker
     Friend WithEvents bwLoadImages_Movie As New ComponentModel.BackgroundWorker
     Friend WithEvents bwLoadImages_MovieSet As New ComponentModel.BackgroundWorker
@@ -1607,6 +1608,39 @@ Public Class frmMain
         tspbLoading.Visible = False
 
         FillList_Main(True, True, True)
+    End Sub
+
+    Private Sub bwPlexIgnoreClean_DoWork(ByVal sender As Object, ByVal e As System.ComponentModel.DoWorkEventArgs) Handles bwPlexIgnoreClean.DoWork
+        Dim Args As Structures.PlexIgnoreCleanRequest = DirectCast(e.Argument, Structures.PlexIgnoreCleanRequest)
+        Dim Result As New Structures.PlexIgnoreCleanResult
+        If Args.Movies Then Result.MovieDeleted = Master.DB.Clean_PlexIgnore_Movies(Args.MovieSourceID)
+        If Args.TV Then Result.TVDeleted = Master.DB.Clean_PlexIgnore_TVShows(Args.TVSourceID)
+        e.Result = Result
+    End Sub
+
+    Private Sub bwPlexIgnoreClean_RunWorkerCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwPlexIgnoreClean.RunWorkerCompleted
+        SetStatus(String.Empty)
+        tspbLoading.Visible = False
+
+        If Not e.Cancelled AndAlso e.Result IsNot Nothing Then
+            ShowPlexIgnoreCleanResult(DirectCast(e.Result, Structures.PlexIgnoreCleanResult))
+        End If
+    End Sub
+
+    Private Sub ShowPlexIgnoreCleanResult(ByVal result As Structures.PlexIgnoreCleanResult)
+        Dim lines As New List(Of String)
+        If result.MovieDeleted > 0 Then
+            'FIXME: i18n
+            lines.Add(String.Format("{0} indexed movie {1} removed from the database.", result.MovieDeleted, If(result.MovieDeleted = 1, "entry was", "entries were")))
+        End If
+        If result.TVDeleted > 0 Then
+            'FIXME: i18n
+            lines.Add(String.Format("{0} indexed episode {1} removed from the database.", result.TVDeleted, If(result.TVDeleted = 1, "entry was", "entries were")))
+        End If
+        If lines.Count > 0 Then
+            'FIXME: i18n
+            MessageBox.Show(String.Join(Environment.NewLine & Environment.NewLine, lines), ".plexignore enabled", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        End If
     End Sub
 
     Private Sub bwDownloadPic_DoWork(ByVal sender As Object, ByVal e As System.ComponentModel.DoWorkEventArgs) Handles bwDownloadPic.DoWork
@@ -4060,6 +4094,21 @@ Public Class frmMain
 
         bwCleanDB.WorkerSupportsCancellation = True
         bwCleanDB.RunWorkerAsync(Clean)
+    End Sub
+
+    Private Sub PlexIgnoreCleanDB(ByVal Clean As Structures.PlexIgnoreCleanRequest)
+        SetControlsEnabled(False, True)
+        tspbLoading.Style = ProgressBarStyle.Marquee
+        EnableFilters_Movies(False)
+        EnableFilters_MovieSets(False)
+        EnableFilters_Shows(False)
+
+        'FIXME: i18n
+        SetStatus("Removing ignored entries...")
+        tspbLoading.Visible = True
+
+        bwPlexIgnoreClean.WorkerSupportsCancellation = True
+        bwPlexIgnoreClean.RunWorkerAsync(Clean)
     End Sub
 
     Private Sub CleanFiles()
@@ -16974,6 +17023,8 @@ Public Class frmMain
                 dresult.NeedsDBClean_TV OrElse
                 dresult.NeedsDBUpdate_Movie OrElse
                 dresult.NeedsDBUpdate_TV OrElse
+                dresult.NeedsPlexIgnoreClean_Movie OrElse
+                dresult.NeedsPlexIgnoreClean_TV OrElse
                 dresult.NeedsReload_Movie OrElse
                 dresult.NeedsReload_MovieSet OrElse
                 dresult.NeedsReload_TVEpisode OrElse
@@ -16983,7 +17034,7 @@ Public Class frmMain
                     If MessageBox.Show(String.Format(Master.eLang.GetString(1007, "You've changed a setting that makes it necessary that the database is cleaned up. Please make sure that all sources are available!{0}{0}Should the process be continued?"), Environment.NewLine), Master.eLang.GetString(356, "Warning"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) = DialogResult.Yes Then
                         While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
                             bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy
+                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
                             Application.DoEvents()
                             Threading.Thread.Sleep(50)
                         End While
@@ -16995,11 +17046,31 @@ Public Class frmMain
                     End If
                 End If
 
+                If dresult.NeedsPlexIgnoreClean_Movie OrElse dresult.NeedsPlexIgnoreClean_TV Then
+                    If Not fScanner.IsBusy Then
+                        While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
+                            bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
+                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
+                            Application.DoEvents()
+                            Threading.Thread.Sleep(50)
+                        End While
+                        PlexIgnoreCleanDB(New Structures.PlexIgnoreCleanRequest With {
+                            .Movies = dresult.NeedsPlexIgnoreClean_Movie,
+                            .TV = dresult.NeedsPlexIgnoreClean_TV,
+                            .MovieSourceID = dresult.PlexIgnoreCleanSourceId_Movie,
+                            .TVSourceID = dresult.PlexIgnoreCleanSourceId_TV})
+                        While bwPlexIgnoreClean.IsBusy
+                            Application.DoEvents()
+                            Threading.Thread.Sleep(50)
+                        End While
+                    End If
+                End If
+
                 If dresult.NeedsReload_Movie Then
                     If Not fScanner.IsBusy Then
                         While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
                             bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy
+                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
                             Application.DoEvents()
                             Threading.Thread.Sleep(50)
                         End While
@@ -17010,7 +17081,7 @@ Public Class frmMain
                     If Not fScanner.IsBusy Then
                         While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
                             bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy
+                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
                             Application.DoEvents()
                             Threading.Thread.Sleep(50)
                         End While
@@ -17021,7 +17092,7 @@ Public Class frmMain
                     If Not fScanner.IsBusy Then
                         While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
                             bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy
+                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
                             Application.DoEvents()
                             Threading.Thread.Sleep(50)
                         End While
@@ -17032,7 +17103,7 @@ Public Class frmMain
                     If Not fScanner.IsBusy Then
                         While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
                             bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy
+                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
                             Application.DoEvents()
                             Threading.Thread.Sleep(50)
                         End While
@@ -17043,7 +17114,7 @@ Public Class frmMain
 
             If Not fScanner.IsBusy AndAlso Not bwLoadImages_Movie.IsBusy AndAlso Not bwMovieScraper.IsBusy AndAlso Not bwReload_Movies.IsBusy AndAlso
                     Not bwLoadImages_MovieSet.IsBusy AndAlso Not bwMovieSetScraper.IsBusy AndAlso Not bwReload_MovieSets.IsBusy AndAlso
-                    Not bwLoadImages_TVEpisode.IsBusy AndAlso Not bwLoadImages_TVSeason.IsBusy AndAlso Not bwLoadImages_TVShow.IsBusy AndAlso Not bwReload_TVShows.IsBusy AndAlso Not bwCleanDB.IsBusy Then
+                    Not bwLoadImages_TVEpisode.IsBusy AndAlso Not bwLoadImages_TVSeason.IsBusy AndAlso Not bwLoadImages_TVShow.IsBusy AndAlso Not bwReload_TVShows.IsBusy AndAlso Not bwCleanDB.IsBusy AndAlso Not bwPlexIgnoreClean.IsBusy Then
                 FillList_Main(True, True, True)
             End If
 
@@ -17052,7 +17123,7 @@ Public Class frmMain
             If dresult.NeedsRestart Then
                 While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
                     bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                    bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy
+                    bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
                     Application.DoEvents()
                     Threading.Thread.Sleep(50)
                 End While

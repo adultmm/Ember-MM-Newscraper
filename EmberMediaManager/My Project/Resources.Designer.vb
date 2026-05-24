@@ -967,6 +967,15 @@ Namespace My.Resources
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to https://support.plex.tv/articles/201381883-special-keyword-file-folder-exclusion/.
+        '''</summary>
+        Friend ReadOnly Property urlPlexIgnoreDocs() As String
+            Get
+                Return ResourceManager.GetString("urlPlexIgnoreDocs", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to https://github.com/DanCooper/Ember-MM-Newscraper/releases.
         '''</summary>
         Friend ReadOnly Property urlReleaseThread() As String

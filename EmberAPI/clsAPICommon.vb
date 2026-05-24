@@ -1993,7 +1993,23 @@ Public Class Structures
         Dim NeedsReload_MovieSet As Boolean
         Dim NeedsReload_TVEpisode As Boolean
         Dim NeedsReload_TVShow As Boolean
+        Dim NeedsPlexIgnoreClean_Movie As Boolean
+        Dim NeedsPlexIgnoreClean_TV As Boolean
+        Dim PlexIgnoreCleanSourceId_Movie As Long
+        Dim PlexIgnoreCleanSourceId_TV As Long
         Dim NeedsRestart As Boolean
+    End Structure
+
+    Public Structure PlexIgnoreCleanRequest
+        Dim Movies As Boolean
+        Dim TV As Boolean
+        Dim MovieSourceID As Long
+        Dim TVSourceID As Long
+    End Structure
+
+    Public Structure PlexIgnoreCleanResult
+        Dim MovieDeleted As Integer
+        Dim TVDeleted As Integer
     End Structure
 
     Public Structure ModulesMenus
