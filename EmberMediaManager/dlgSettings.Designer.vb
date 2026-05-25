@@ -321,6 +321,15 @@ Partial Class dlgSettings
         Me.txtFileSystemExcludedDirs = New System.Windows.Forms.TextBox()
         Me.btnFileSystemExcludedDirsAdd = New System.Windows.Forms.Button()
         Me.btnFileSystemExcludedDirsBrowse = New System.Windows.Forms.Button()
+        Me.gbPartialDownloadExclude = New System.Windows.Forms.GroupBox()
+        Me.tblPartialDownloadExclude = New System.Windows.Forms.TableLayoutPanel()
+        Me.flpPartialDownloadExclude = New System.Windows.Forms.FlowLayoutPanel()
+        Me.chkExcludePartialDownloadFiles = New System.Windows.Forms.CheckBox()
+        Me.pbPartialDownloadInfo = New System.Windows.Forms.PictureBox()
+        Me.lblPartialDownloadExcludePattern = New System.Windows.Forms.Label()
+        Me.txtPartialDownloadExcludePattern = New System.Windows.Forms.TextBox()
+        Me.btnPartialDownloadExcludePatternReset = New System.Windows.Forms.Button()
+        Me.ttPartialDownloadExclude = New System.Windows.Forms.ToolTip(Me.components)
         Me.gbFileSystemValidSubtitlesExts = New System.Windows.Forms.GroupBox()
         Me.tblFileSystemValidSubtitlesExts = New System.Windows.Forms.TableLayoutPanel()
         Me.btnFileSystemValidSubtitlesExtsRemove = New System.Windows.Forms.Button()
@@ -1715,6 +1724,10 @@ Partial Class dlgSettings
         Me.tblFileSystemNoStackExts.SuspendLayout
         Me.gbFileSystemExcludedDirs.SuspendLayout
         Me.tblFileSystemExcludedDirs.SuspendLayout
+        Me.gbPartialDownloadExclude.SuspendLayout
+        Me.tblPartialDownloadExclude.SuspendLayout
+        Me.flpPartialDownloadExclude.SuspendLayout
+        CType(Me.pbPartialDownloadInfo, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.gbFileSystemValidSubtitlesExts.SuspendLayout
         Me.tblFileSystemValidSubtitlesExts.SuspendLayout
         Me.gbFileSystemValidThemeExts.SuspendLayout
@@ -5634,6 +5647,7 @@ Partial Class dlgSettings
         Me.tblFileSystem.Controls.Add(Me.gbFileSystemValidVideoExts, 0, 0)
         Me.tblFileSystem.Controls.Add(Me.gbFileSystemNoStackExts, 2, 0)
         Me.tblFileSystem.Controls.Add(Me.gbFileSystemExcludedDirs, 0, 3)
+        Me.tblFileSystem.Controls.Add(Me.gbPartialDownloadExclude, 0, 4)
         Me.tblFileSystem.Controls.Add(Me.gbFileSystemValidSubtitlesExts, 1, 0)
         Me.tblFileSystem.Controls.Add(Me.gbFileSystemValidThemeExts, 1, 2)
         Me.tblFileSystem.Controls.Add(Me.gbFileSystemCleanFiles, 2, 1)
@@ -5829,6 +5843,114 @@ Partial Class dlgSettings
         Me.gbFileSystemExcludedDirs.TabIndex = 4
         Me.gbFileSystemExcludedDirs.TabStop = False
         Me.gbFileSystemExcludedDirs.Text = "Excluded Directories"
+        '
+        'gbPartialDownloadExclude
+        '
+        Me.gbPartialDownloadExclude.AutoSize = True
+        Me.tblFileSystem.SetColumnSpan(Me.gbPartialDownloadExclude, 4)
+        Me.gbPartialDownloadExclude.Controls.Add(Me.tblPartialDownloadExclude)
+        Me.gbPartialDownloadExclude.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.gbPartialDownloadExclude.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Bold)
+        Me.gbPartialDownloadExclude.Location = New System.Drawing.Point(3, 499)
+        Me.gbPartialDownloadExclude.Name = "gbPartialDownloadExclude"
+        Me.gbPartialDownloadExclude.Size = New System.Drawing.Size(528, 93)
+        Me.gbPartialDownloadExclude.TabIndex = 5
+        Me.gbPartialDownloadExclude.TabStop = False
+        Me.gbPartialDownloadExclude.Text = "Partial Download Files"
+        '
+        'tblPartialDownloadExclude
+        '
+        Me.tblPartialDownloadExclude.AutoSize = True
+        Me.tblPartialDownloadExclude.ColumnCount = 3
+        Me.tblPartialDownloadExclude.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
+        Me.tblPartialDownloadExclude.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
+        Me.tblPartialDownloadExclude.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
+        Me.tblPartialDownloadExclude.Controls.Add(Me.flpPartialDownloadExclude, 0, 0)
+        Me.tblPartialDownloadExclude.Controls.Add(Me.lblPartialDownloadExcludePattern, 0, 1)
+        Me.tblPartialDownloadExclude.Controls.Add(Me.txtPartialDownloadExcludePattern, 1, 1)
+        Me.tblPartialDownloadExclude.Controls.Add(Me.btnPartialDownloadExcludePatternReset, 2, 1)
+        Me.tblPartialDownloadExclude.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.tblPartialDownloadExclude.Location = New System.Drawing.Point(3, 18)
+        Me.tblPartialDownloadExclude.Name = "tblPartialDownloadExclude"
+        Me.tblPartialDownloadExclude.RowCount = 2
+        Me.tblPartialDownloadExclude.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.tblPartialDownloadExclude.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.tblPartialDownloadExclude.SetColumnSpan(Me.flpPartialDownloadExclude, 3)
+        Me.tblPartialDownloadExclude.Size = New System.Drawing.Size(522, 72)
+        Me.tblPartialDownloadExclude.TabIndex = 0
+        '
+        'flpPartialDownloadExclude
+        '
+        Me.flpPartialDownloadExclude.AutoSize = True
+        Me.flpPartialDownloadExclude.Controls.Add(Me.chkExcludePartialDownloadFiles)
+        Me.flpPartialDownloadExclude.Controls.Add(Me.pbPartialDownloadInfo)
+        Me.flpPartialDownloadExclude.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.flpPartialDownloadExclude.Location = New System.Drawing.Point(0, 0)
+        Me.flpPartialDownloadExclude.Margin = New System.Windows.Forms.Padding(0)
+        Me.flpPartialDownloadExclude.Name = "flpPartialDownloadExclude"
+        Me.flpPartialDownloadExclude.Size = New System.Drawing.Size(522, 23)
+        Me.flpPartialDownloadExclude.TabIndex = 0
+        Me.flpPartialDownloadExclude.WrapContents = False
+        '
+        'chkExcludePartialDownloadFiles
+        '
+        Me.chkExcludePartialDownloadFiles.AutoSize = True
+        Me.chkExcludePartialDownloadFiles.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
+        Me.chkExcludePartialDownloadFiles.Location = New System.Drawing.Point(0, 3)
+        Me.chkExcludePartialDownloadFiles.Margin = New System.Windows.Forms.Padding(0, 3, 4, 0)
+        Me.chkExcludePartialDownloadFiles.Name = "chkExcludePartialDownloadFiles"
+        Me.chkExcludePartialDownloadFiles.Size = New System.Drawing.Size(289, 17)
+        Me.chkExcludePartialDownloadFiles.TabIndex = 0
+        Me.chkExcludePartialDownloadFiles.Text = "Exclude partial download files (BitTorrent, uTorrent, etc.)"
+        Me.chkExcludePartialDownloadFiles.UseVisualStyleBackColor = True
+        '
+        'pbPartialDownloadInfo
+        '
+        Me.pbPartialDownloadInfo.Cursor = System.Windows.Forms.Cursors.Help
+        Me.pbPartialDownloadInfo.Image = System.Drawing.SystemIcons.Information.ToBitmap()
+        Me.pbPartialDownloadInfo.Location = New System.Drawing.Point(296, 3)
+        Me.pbPartialDownloadInfo.Margin = New System.Windows.Forms.Padding(0, 3, 0, 0)
+        Me.pbPartialDownloadInfo.Name = "pbPartialDownloadInfo"
+        Me.pbPartialDownloadInfo.Size = New System.Drawing.Size(16, 16)
+        Me.pbPartialDownloadInfo.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage
+        Me.pbPartialDownloadInfo.TabIndex = 1
+        Me.pbPartialDownloadInfo.TabStop = False
+        '
+        'lblPartialDownloadExcludePattern
+        '
+        Me.lblPartialDownloadExcludePattern.AutoSize = False
+        Me.lblPartialDownloadExcludePattern.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.lblPartialDownloadExcludePattern.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
+        Me.lblPartialDownloadExcludePattern.Location = New System.Drawing.Point(3, 26)
+        Me.lblPartialDownloadExcludePattern.Margin = New System.Windows.Forms.Padding(3, 3, 6, 3)
+        Me.lblPartialDownloadExcludePattern.Name = "lblPartialDownloadExcludePattern"
+        Me.lblPartialDownloadExcludePattern.Size = New System.Drawing.Size(118, 13)
+        Me.lblPartialDownloadExcludePattern.TabIndex = 1
+        Me.lblPartialDownloadExcludePattern.Text = "Filename pattern (regex):"
+        Me.lblPartialDownloadExcludePattern.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
+        '
+        'txtPartialDownloadExcludePattern
+        '
+        Me.txtPartialDownloadExcludePattern.Anchor = CType((System.Windows.Forms.AnchorStyles.Left Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.txtPartialDownloadExcludePattern.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
+        Me.txtPartialDownloadExcludePattern.Location = New System.Drawing.Point(127, 26)
+        Me.txtPartialDownloadExcludePattern.Margin = New System.Windows.Forms.Padding(0, 3, 3, 3)
+        Me.txtPartialDownloadExcludePattern.Name = "txtPartialDownloadExcludePattern"
+        Me.txtPartialDownloadExcludePattern.Size = New System.Drawing.Size(311, 22)
+        Me.txtPartialDownloadExcludePattern.TabIndex = 2
+        '
+        'btnPartialDownloadExcludePatternReset
+        '
+        Me.btnPartialDownloadExcludePatternReset.Anchor = System.Windows.Forms.AnchorStyles.Left
+        Me.btnPartialDownloadExcludePatternReset.AutoSize = True
+        Me.btnPartialDownloadExcludePatternReset.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(238, Byte))
+        Me.btnPartialDownloadExcludePatternReset.Location = New System.Drawing.Point(444, 25)
+        Me.btnPartialDownloadExcludePatternReset.Margin = New System.Windows.Forms.Padding(0, 3, 3, 3)
+        Me.btnPartialDownloadExcludePatternReset.Name = "btnPartialDownloadExcludePatternReset"
+        Me.btnPartialDownloadExcludePatternReset.Size = New System.Drawing.Size(75, 23)
+        Me.btnPartialDownloadExcludePatternReset.TabIndex = 3
+        Me.btnPartialDownloadExcludePatternReset.Text = "Reset"
+        Me.btnPartialDownloadExcludePatternReset.UseVisualStyleBackColor = True
         '
         'tblFileSystemExcludedDirs
         '
@@ -23135,6 +23257,13 @@ Partial Class dlgSettings
         Me.gbFileSystemExcludedDirs.PerformLayout
         Me.tblFileSystemExcludedDirs.ResumeLayout(False)
         Me.tblFileSystemExcludedDirs.PerformLayout
+        Me.gbPartialDownloadExclude.ResumeLayout(False)
+        Me.gbPartialDownloadExclude.PerformLayout
+        Me.tblPartialDownloadExclude.ResumeLayout(False)
+        Me.tblPartialDownloadExclude.PerformLayout
+        Me.flpPartialDownloadExclude.ResumeLayout(False)
+        Me.flpPartialDownloadExclude.PerformLayout
+        CType(Me.pbPartialDownloadInfo, System.ComponentModel.ISupportInitialize).EndInit()
         Me.gbFileSystemValidSubtitlesExts.ResumeLayout(False)
         Me.gbFileSystemValidSubtitlesExts.PerformLayout
         Me.tblFileSystemValidSubtitlesExts.ResumeLayout(False)
@@ -24581,6 +24710,15 @@ End Sub
     Friend WithEvents chkTVScraperUseSRuntimeForEp As System.Windows.Forms.CheckBox
     Friend WithEvents chkMovieScraperCollectionsAuto As System.Windows.Forms.CheckBox
     Friend WithEvents gbFileSystemExcludedDirs As System.Windows.Forms.GroupBox
+    Friend WithEvents gbPartialDownloadExclude As System.Windows.Forms.GroupBox
+    Friend WithEvents tblPartialDownloadExclude As System.Windows.Forms.TableLayoutPanel
+    Friend WithEvents flpPartialDownloadExclude As System.Windows.Forms.FlowLayoutPanel
+    Friend WithEvents chkExcludePartialDownloadFiles As System.Windows.Forms.CheckBox
+    Friend WithEvents pbPartialDownloadInfo As System.Windows.Forms.PictureBox
+    Friend WithEvents lblPartialDownloadExcludePattern As System.Windows.Forms.Label
+    Friend WithEvents txtPartialDownloadExcludePattern As System.Windows.Forms.TextBox
+    Friend WithEvents btnPartialDownloadExcludePatternReset As System.Windows.Forms.Button
+    Friend ttPartialDownloadExclude As System.Windows.Forms.ToolTip
     Friend WithEvents btnFileSystemExcludedDirsRemove As System.Windows.Forms.Button
     Friend WithEvents btnFileSystemExcludedDirsAdd As System.Windows.Forms.Button
     Friend WithEvents txtFileSystemExcludedDirs As System.Windows.Forms.TextBox

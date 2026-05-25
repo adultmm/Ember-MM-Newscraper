@@ -53,6 +53,7 @@ Public Class frmMain
 
     Private TaskList As New List(Of Task)
     Private TasksDone As Boolean = True
+    Private _cleanDBRequest As Structures.ScanOrClean?
 
     Private alActors As New List(Of String)
     Private FilterPanelIsRaised_Movie As Boolean = False
@@ -1607,6 +1608,16 @@ Public Class frmMain
         SetStatus(String.Empty)
         tspbLoading.Visible = False
 
+        If Not e.Cancelled AndAlso _cleanDBRequest.HasValue Then
+            RunPartialDownloadCleanAfterDatabaseClean(_cleanDBRequest.Value)
+            _cleanDBRequest = Nothing
+        End If
+
+        SetControlsEnabled(True, True)
+        EnableFilters_Movies(True)
+        EnableFilters_MovieSets(True)
+        EnableFilters_Shows(True)
+
         FillList_Main(True, True, True)
     End Sub
 
@@ -1627,7 +1638,37 @@ Public Class frmMain
         End If
     End Sub
 
-    Private Sub ShowPlexIgnoreCleanResult(ByVal result As Structures.PlexIgnoreCleanResult)
+    Private Sub PartialDownloadCleanDB(ByVal Clean As Structures.ScanOrClean)
+        SetControlsEnabled(False, True)
+        tspbLoading.Style = ProgressBarStyle.Marquee
+        EnableFilters_Movies(False)
+        EnableFilters_MovieSets(False)
+        EnableFilters_Shows(False)
+
+        'FIXME: i18n
+        SetStatus("Removing partial download entries...")
+        tspbLoading.Visible = True
+        Application.DoEvents()
+
+        RunPartialDownloadCleanAfterDatabaseClean(Clean)
+
+        SetStatus(String.Empty)
+        tspbLoading.Visible = False
+        SetControlsEnabled(True, True)
+        EnableFilters_Movies(True)
+        EnableFilters_MovieSets(True)
+        EnableFilters_Shows(True)
+
+        FillList_Main(True, True, True)
+    End Sub
+
+    Private Sub RunPartialDownloadCleanAfterDatabaseClean(ByVal clean As Structures.ScanOrClean)
+        Dim result As Structures.PartialDownloadCleanResult = PartialDownloadCleanHelper.RunClean(
+            New Structures.ScanOrClean With {.Movies = clean.Movies, .TV = clean.TV})
+        ShowPartialDownloadCleanResult(result)
+    End Sub
+
+    Private Sub ShowPartialDownloadCleanResult(ByVal result As Structures.PartialDownloadCleanResult)
         Dim lines As New List(Of String)
         If result.MovieDeleted > 0 Then
             'FIXME: i18n
@@ -1637,9 +1678,17 @@ Public Class frmMain
             'FIXME: i18n
             lines.Add(String.Format("{0} indexed episode {1} removed from the database.", result.TVDeleted, If(result.TVDeleted = 1, "entry was", "entries were")))
         End If
+        If result.SidecarFilesDeleted > 0 Then
+            'FIXME: i18n
+            lines.Add(String.Format("{0} sidecar {1} deleted from disk.", result.SidecarFilesDeleted, If(result.SidecarFilesDeleted = 1, "file was", "files were")))
+        End If
+        If result.WasAborted Then
+            'FIXME: i18n
+            lines.Add("Partial download clean was aborted. Remaining entries were not processed.")
+        End If
         If lines.Count > 0 Then
             'FIXME: i18n
-            MessageBox.Show(String.Join(Environment.NewLine & Environment.NewLine, lines), ".plexignore enabled", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            MessageBox.Show(String.Join(Environment.NewLine & Environment.NewLine, lines), "Partial download clean", MessageBoxButtons.OK, MessageBoxIcon.Information)
         End If
     End Sub
 
@@ -4092,6 +4141,7 @@ Public Class frmMain
         SetStatus(Master.eLang.GetString(644, "Cleaning Database..."))
         tspbLoading.Visible = True
 
+        _cleanDBRequest = Clean
         bwCleanDB.WorkerSupportsCancellation = True
         bwCleanDB.RunWorkerAsync(Clean)
     End Sub
@@ -4109,6 +4159,22 @@ Public Class frmMain
 
         bwPlexIgnoreClean.WorkerSupportsCancellation = True
         bwPlexIgnoreClean.RunWorkerAsync(Clean)
+    End Sub
+
+    Private Sub ShowPlexIgnoreCleanResult(ByVal result As Structures.PlexIgnoreCleanResult)
+        Dim lines As New List(Of String)
+        If result.MovieDeleted > 0 Then
+            'FIXME: i18n
+            lines.Add(String.Format("{0} indexed movie {1} removed from the database.", result.MovieDeleted, If(result.MovieDeleted = 1, "entry was", "entries were")))
+        End If
+        If result.TVDeleted > 0 Then
+            'FIXME: i18n
+            lines.Add(String.Format("{0} indexed episode {1} removed from the database.", result.TVDeleted, If(result.TVDeleted = 1, "entry was", "entries were")))
+        End If
+        If lines.Count > 0 Then
+            'FIXME: i18n
+            MessageBox.Show(String.Join(Environment.NewLine & Environment.NewLine, lines), ".plexignore enabled", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        End If
     End Sub
 
     Private Sub CleanFiles()
@@ -10787,6 +10853,10 @@ Public Class frmMain
 
                 SetUp(True)
 
+                If PartialDownloadUpgradePromptHelper.TryHandleUpgradePrompt() Then
+                    PartialDownloadCleanDB(New Structures.ScanOrClean With {.Movies = True, .TV = True})
+                End If
+
                 Master.fLoading.SetLoadingMesg(Master.eLang.GetString(863, "Positioning controls..."))
                 Location = Master.eSettings.GeneralWindowLoc
                 Size = Master.eSettings.GeneralWindowSize
@@ -17021,6 +17091,7 @@ Public Class frmMain
 
             If dresult.NeedsDBClean_Movie OrElse
                 dresult.NeedsDBClean_TV OrElse
+                dresult.NeedsPartialDownloadClean OrElse
                 dresult.NeedsDBUpdate_Movie OrElse
                 dresult.NeedsDBUpdate_TV OrElse
                 dresult.NeedsPlexIgnoreClean_Movie OrElse
@@ -17029,6 +17100,8 @@ Public Class frmMain
                 dresult.NeedsReload_MovieSet OrElse
                 dresult.NeedsReload_TVEpisode OrElse
                 dresult.NeedsReload_TVShow Then
+
+                Dim partialCleanHandledByDbClean As Boolean = False
 
                 If dresult.NeedsDBClean_Movie OrElse dresult.NeedsDBClean_TV Then
                     If MessageBox.Show(String.Format(Master.eLang.GetString(1007, "You've changed a setting that makes it necessary that the database is cleaned up. Please make sure that all sources are available!{0}{0}Should the process be continued?"), Environment.NewLine), Master.eLang.GetString(356, "Warning"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) = DialogResult.Yes Then
@@ -17043,7 +17116,22 @@ Public Class frmMain
                         DBCleaner.Movies = dresult.NeedsDBClean_Movie AndAlso Not (dresult.NeedsDBUpdate_Movie AndAlso Master.eSettings.MovieCleanDB)
                         DBCleaner.TV = dresult.NeedsDBClean_TV AndAlso Not (dresult.NeedsDBUpdate_TV AndAlso Master.eSettings.TVCleanDB)
                         CleanDB(DBCleaner)
+                        While bwCleanDB.IsBusy
+                            Application.DoEvents()
+                            Threading.Thread.Sleep(50)
+                        End While
+                        partialCleanHandledByDbClean = dresult.NeedsPartialDownloadClean
                     End If
+                End If
+
+                If dresult.NeedsPartialDownloadClean AndAlso Not partialCleanHandledByDbClean Then
+                    While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
+                        bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
+                        bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
+                        Application.DoEvents()
+                        Threading.Thread.Sleep(50)
+                    End While
+                    PartialDownloadCleanDB(New Structures.ScanOrClean With {.Movies = True, .TV = True})
                 End If
 
                 If dresult.NeedsPlexIgnoreClean_Movie OrElse dresult.NeedsPlexIgnoreClean_TV Then

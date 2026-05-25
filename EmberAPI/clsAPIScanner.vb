@@ -1386,7 +1386,8 @@ Public Class Scanner
                     Dim tList As IOrderedEnumerable(Of FileInfo) = lFi.Where(Function(f) Master.eSettings.FileSystemValidExts.Contains(f.Extension.ToLower) AndAlso
                              Not Regex.IsMatch(f.Name, AdvancedSettings.GetSetting("NotValidFileContains", "[^\w\s]\s?trailer|[^\w\s]\s?sample"), RegexOptions.IgnoreCase) AndAlso ((Master.eSettings.MovieSkipStackedSizeCheck AndAlso
                             FileUtils.Common.isStacked(f.FullName)) OrElse (Not Convert.ToInt32(Master.eSettings.MovieSkipLessThan) > 0 OrElse f.Length >= Master.eSettings.MovieSkipLessThan * 1048576)) AndAlso
-                            Not plexIgnoreMovie.IsIgnored(f.Name, False)).OrderBy(Function(f) f.FullName)
+                            Not plexIgnoreMovie.IsIgnored(f.Name, False) AndAlso
+                            (Not Master.eSettings.ExcludePartialDownloadFiles OrElse Not PartialDownloadFilter.IsPartialDownload(f.Name))).OrderBy(Function(f) f.FullName)
 
                     isSingle = EmberDirectoryOptions.GetInstance(sSource, di.FullName).GetIsSingle(isSingle)
 
@@ -1453,6 +1454,10 @@ Public Class Scanner
             Try
                 If plexIgnoreTV.IsIgnored(lFile.Name, False) Then
                     logger.Info(String.Format("[Scanner] [ScanForFiles_TV] File ""{0}"" has been ignored (.plexignore rule)", lFile.FullName))
+                    Continue For
+                End If
+                If Master.eSettings.ExcludePartialDownloadFiles AndAlso PartialDownloadFilter.IsPartialDownload(lFile.Name) Then
+                    logger.Info(String.Format("[Scanner] [ScanForFiles_TV] File ""{0}"" has been ignored (partial download file)", lFile.FullName))
                     Continue For
                 End If
                 If Not TVEpisodePaths.Contains(lFile.FullName.ToLower) AndAlso Master.eSettings.FileSystemValidExts.Contains(lFile.Extension.ToLower) AndAlso

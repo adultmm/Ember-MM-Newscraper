@@ -541,6 +541,68 @@ Public Class Database
         Return deleted
     End Function
 
+    ''' <summary>
+    ''' Returns indexed movie and TV episode entries whose filename matches the partial-download pattern.
+    ''' </summary>
+    Public Function GetPartialDownloadCandidates(ByVal includeMovies As Boolean, ByVal includeTV As Boolean) As List(Of Structures.PartialDownloadCleanCandidate)
+        Dim candidates As New List(Of Structures.PartialDownloadCleanCandidate)
+        If Not Master.eSettings.ExcludePartialDownloadFiles Then Return candidates
+
+        If includeMovies Then
+            Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
+                SQLcommand.CommandText = "SELECT MoviePath, idMovie, Title FROM movie;"
+                Using SQLReader As SQLiteDataReader = SQLcommand.ExecuteReader()
+                    While SQLReader.Read
+                        Dim moviePath As String = SQLReader("MoviePath").ToString
+                        If PartialDownloadFilter.IsPartialDownload(Path.GetFileName(moviePath)) Then
+                            candidates.Add(New Structures.PartialDownloadCleanCandidate With {
+                                .ContentType = Enums.ContentType.Movie,
+                                .Id = Convert.ToInt64(SQLReader("idMovie")),
+                                .FilePath = moviePath,
+                                .DisplayTitle = SQLReader("Title").ToString})
+                        End If
+                    End While
+                End Using
+            End Using
+        End If
+
+        If includeTV Then
+            Using SQLcommand As SQLiteCommand = _myvideosDBConn.CreateCommand()
+                SQLcommand.CommandText = "SELECT files.strFilename, episode.idEpisode, tvshow.Title AS ShowTitle, episode.Title AS EpisodeTitle FROM files INNER JOIN episode ON (files.idFile = episode.idFile) INNER JOIN tvshow ON (episode.idShow = tvshow.idShow);"
+                Using SQLReader As SQLiteDataReader = SQLcommand.ExecuteReader()
+                    While SQLReader.Read
+                        Dim episodePath As String = SQLReader("strFilename").ToString
+                        If PartialDownloadFilter.IsPartialDownload(Path.GetFileName(episodePath)) Then
+                            Dim showTitle As String = SQLReader("ShowTitle").ToString
+                            Dim episodeTitle As String = SQLReader("EpisodeTitle").ToString
+                            candidates.Add(New Structures.PartialDownloadCleanCandidate With {
+                                .ContentType = Enums.ContentType.TVEpisode,
+                                .Id = Convert.ToInt64(SQLReader("idEpisode")),
+                                .FilePath = episodePath,
+                                .DisplayTitle = String.Format("{0} - {1}", showTitle, episodeTitle)})
+                        End If
+                    End While
+                End Using
+            End Using
+        End If
+
+        Return candidates
+    End Function
+
+    ''' <summary>
+    ''' Removes a single partial-download database entry (movie or TV episode).
+    ''' </summary>
+    Public Sub DeletePartialDownloadEntry(ByVal candidate As Structures.PartialDownloadCleanCandidate)
+        Select Case candidate.ContentType
+            Case Enums.ContentType.Movie
+                logger.Info(String.Format("[Database] [Clean] [PartialDownload] Deleting movie id={0} path=""{1}""", candidate.Id, candidate.FilePath))
+                Delete_Movie(candidate.Id, True)
+            Case Enums.ContentType.TVEpisode
+                logger.Info(String.Format("[Database] [Clean] [PartialDownload] Deleting episode id={0} path=""{1}""", candidate.Id, candidate.FilePath))
+                Delete_TVEpisode(candidate.Id, False, False, True)
+        End Select
+    End Sub
+
     Private Shared Function IsPathIgnoredByPlexIgnore(ByVal filePath As String, ByVal filterCache As Dictionary(Of String, PlexIgnoreFilter)) As Boolean
         If String.IsNullOrEmpty(filePath) Then Return False
         Dim fileDir As String = Path.GetDirectoryName(filePath)

@@ -1997,6 +1997,7 @@ Public Class Structures
         Dim NeedsPlexIgnoreClean_TV As Boolean
         Dim PlexIgnoreCleanSourceId_Movie As Long
         Dim PlexIgnoreCleanSourceId_TV As Long
+        Dim NeedsPartialDownloadClean As Boolean
         Dim NeedsRestart As Boolean
     End Structure
 
@@ -2010,6 +2011,20 @@ Public Class Structures
     Public Structure PlexIgnoreCleanResult
         Dim MovieDeleted As Integer
         Dim TVDeleted As Integer
+    End Structure
+
+    Public Structure PartialDownloadCleanCandidate
+        Dim ContentType As Enums.ContentType
+        Dim Id As Long
+        Dim FilePath As String
+        Dim DisplayTitle As String
+    End Structure
+
+    Public Structure PartialDownloadCleanResult
+        Dim MovieDeleted As Integer
+        Dim TVDeleted As Integer
+        Dim SidecarFilesDeleted As Integer
+        Dim WasAborted As Boolean
     End Structure
 
     Public Structure ModulesMenus

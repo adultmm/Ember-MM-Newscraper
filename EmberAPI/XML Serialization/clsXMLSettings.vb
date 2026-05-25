@@ -27,6 +27,8 @@ Partial Public Class clsXMLSettings
     Private _filesystemcleanerwhitelist As Boolean
     Private _filesystemcleanerwhitelistexts As List(Of String)
     Private _filesystemexpertcleaner As Boolean
+    Private _excludepartialdownloadfiles As Boolean = True
+    Private _partialdownloadexcludepattern As String = PartialDownloadFilter.DefaultPattern
     Private _filesystemnostackexts As List(Of String)
     Private _filesystemvalidexts As List(Of String)
     Private _filesystemvalidsubtitlesexts As List(Of String)
@@ -5436,6 +5438,24 @@ Partial Public Class clsXMLSettings
         End Get
         Set(ByVal value As Boolean)
             Me._tvscraperusesruntimeforep = value
+        End Set
+    End Property
+
+    Public Property ExcludePartialDownloadFiles() As Boolean
+        Get
+            Return Me._excludepartialdownloadfiles
+        End Get
+        Set(ByVal value As Boolean)
+            Me._excludepartialdownloadfiles = value
+        End Set
+    End Property
+
+    Public Property PartialDownloadExcludePattern() As String
+        Get
+            Return Me._partialdownloadexcludepattern
+        End Get
+        Set(ByVal value As String)
+            Me._partialdownloadexcludepattern = value
         End Set
     End Property
 

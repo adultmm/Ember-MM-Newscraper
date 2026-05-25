@@ -112,6 +112,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="TestCategories.vb" />
+    <Compile Include="Test_clsPartialDownloadFilter.vb" />
+    <Compile Include="Test_PartialDownloadSidecarHelper.vb" />
     <Compile Include="Test_clsPlexIgnore.vb" />
     <Compile Include="Test_clsAPICommon.vb" />
     <Compile Include="Test_clsAPIFileUtils.vb" />

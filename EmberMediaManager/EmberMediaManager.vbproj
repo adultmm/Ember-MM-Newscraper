@@ -209,6 +209,8 @@
   <ItemGroup>
     <Compile Include="ApplicationEvents.vb" />
     <Compile Include="AutoCompleteBehavior.vb" />
+    <Compile Include="PartialDownloadUpgradePromptHelper.vb" />
+    <Compile Include="PartialDownloadCleanHelper.vb" />
     <Compile Include="PlexIgnorePromptHelper.vb" />
     <Compile Include="clsTheming.vb" />
     <Compile Include="dlgAbout.Designer.vb">
@@ -233,6 +235,12 @@
       <DependentUpon>dlgDeleteConfirm.vb</DependentUpon>
     </Compile>
     <Compile Include="dlgDeleteConfirm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="dlgPartialDownloadSidecarClean.Designer.vb">
+      <DependentUpon>dlgPartialDownloadSidecarClean.vb</DependentUpon>
+    </Compile>
+    <Compile Include="dlgPartialDownloadSidecarClean.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="dlgClearOrReplace.Designer.vb">
@@ -431,6 +439,10 @@
     </EmbeddedResource>
     <EmbeddedResource Include="dlgDeleteConfirm.resx">
       <DependentUpon>dlgDeleteConfirm.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="dlgPartialDownloadSidecarClean.resx">
+      <DependentUpon>dlgPartialDownloadSidecarClean.vb</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="dlgClearOrReplace.resx">

@@ -32,6 +32,7 @@ Public Class Settings
     Shared logger As Logger = LogManager.GetCurrentClassLogger()
 
     Private Shared _XMLSettings As New clsXMLSettings
+    Private _pendingPartialDownloadUpgradePrompt As Boolean = False
 
 #End Region 'Fields
 
@@ -2221,6 +2222,34 @@ Public Class Settings
         End Get
         Set(ByVal value As Boolean)
             Settings._XMLSettings.TVShowFilterCustomIsEmpty = value
+        End Set
+    End Property
+
+    Public Property ExcludePartialDownloadFiles() As Boolean
+        Get
+            Return Settings._XMLSettings.ExcludePartialDownloadFiles
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.ExcludePartialDownloadFiles = value
+        End Set
+    End Property
+
+    Public Property PartialDownloadExcludePattern() As String
+        Get
+            Return Settings._XMLSettings.PartialDownloadExcludePattern
+        End Get
+        Set(ByVal value As String)
+            Settings._XMLSettings.PartialDownloadExcludePattern = value
+        End Set
+    End Property
+
+    <Xml.Serialization.XmlIgnore>
+    Public Property PendingPartialDownloadUpgradePrompt() As Boolean
+        Get
+            Return _pendingPartialDownloadUpgradePrompt
+        End Get
+        Set(ByVal value As Boolean)
+            _pendingPartialDownloadUpgradePrompt = value
         End Set
     End Property
 
@@ -6920,14 +6949,17 @@ Public Class Settings
     Public Sub Load()
         'Cocotus, Load from central "Settings" folder if it exists!
         Dim configpath As String = Path.Combine(Master.SettingsPath, "Settings.xml")
+        _pendingPartialDownloadUpgradePrompt = False
 
         Try
             If File.Exists(configpath) Then
-                Dim objStreamReader As New StreamReader(configpath)
-                Dim xXMLSettings As New XmlSerializer(_XMLSettings.GetType)
+                Dim settingsContent As String = File.ReadAllText(configpath)
+                _pendingPartialDownloadUpgradePrompt = (settingsContent.IndexOf("<ExcludePartialDownloadFiles>", StringComparison.OrdinalIgnoreCase) < 0)
 
-                _XMLSettings = CType(xXMLSettings.Deserialize(objStreamReader), clsXMLSettings)
-                objStreamReader.Close()
+                Using objStreamReader As New StreamReader(configpath)
+                    Dim xXMLSettings As New XmlSerializer(_XMLSettings.GetType)
+                    _XMLSettings = CType(xXMLSettings.Deserialize(objStreamReader), clsXMLSettings)
+                End Using
                 'Now we deserialize just the data in a local, shared, variable. So we can reference to us
                 Master.eSettings = Me
             End If
@@ -6937,6 +6969,7 @@ Public Class Settings
             Try
                 Using srSettings As New StreamReader(configpath)
                     Dim sSettings As String = srSettings.ReadToEnd
+                    _pendingPartialDownloadUpgradePrompt = (sSettings.IndexOf("<ExcludePartialDownloadFiles>", StringComparison.OrdinalIgnoreCase) < 0)
                     'old Fanart/Poster sizes
                     sSettings = System.Text.RegularExpressions.Regex.Replace(sSettings, "PrefSize>Xlrg<", "PrefSize>Any<")
                     sSettings = System.Text.RegularExpressions.Regex.Replace(sSettings, "PrefSize>Lrg<", "PrefSize>Any<")
@@ -6961,6 +6994,7 @@ Public Class Settings
             Catch ex2 As Exception
                 logger.Error(ex2, New StackFrame().GetMethod().Name)
                 File.Copy(configpath, String.Concat(configpath, "_backup"), True)
+                _pendingPartialDownloadUpgradePrompt = False
                 Master.eSettings = New Settings
             End Try
         End Try
@@ -7030,6 +7064,8 @@ Public Class Settings
         FileSystemCleanerWhitelist = False
         FileSystemCleanerWhitelistExts = New List(Of String)
         FileSystemExpertCleaner = False
+        ExcludePartialDownloadFiles = True
+        PartialDownloadExcludePattern = PartialDownloadFilter.DefaultPattern
         FileSystemNoStackExts = New List(Of String)
         FileSystemValidExts = New List(Of String)
         FileSystemValidSubtitlesExts = New List(Of String)

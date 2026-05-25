@@ -45,6 +45,8 @@ Public Class dlgSettings
     Private SettingsPanels As New List(Of Containers.SettingsPanel)
     Private TVShowMatching As New List(Of Settings.regexp)
     Private sResult As New Structures.SettingsResult
+    Private _loadedExcludePartialDownloadFiles As Boolean = True
+    Private _loadedPartialDownloadExcludePattern As String = PartialDownloadFilter.DefaultPattern
     'Private tLangList As New List(Of Containers.TVLanguage)
     Private TVMeta As New List(Of Settings.MetadataPerType)
     Public Event LoadEnd()
@@ -82,6 +84,21 @@ Public Class dlgSettings
             sResult.NeedsPlexIgnoreClean_TV = True
             sResult.PlexIgnoreCleanSourceId_TV = sourceId
         End If
+    End Sub
+
+    Private Sub UpdatePartialDownloadControlsEnabled()
+        Dim enabled As Boolean = chkExcludePartialDownloadFiles.Checked
+        lblPartialDownloadExcludePattern.Enabled = enabled
+        txtPartialDownloadExcludePattern.Enabled = enabled
+        btnPartialDownloadExcludePatternReset.Enabled = enabled
+    End Sub
+
+    Private Sub MarkNeedsPartialDownloadCleanIfApplicable()
+        If NoUpdate Then Return
+
+        Dim currentPattern As String = txtPartialDownloadExcludePattern.Text.Trim()
+        sResult.NeedsPartialDownloadClean = chkExcludePartialDownloadFiles.Checked AndAlso (
+            Not _loadedExcludePartialDownloadFiles OrElse currentPattern <> _loadedPartialDownloadExcludePattern)
     End Sub
 
     Private Sub dlgSettings_SizeChanged(sender As Object, e As EventArgs) Handles MyBase.SizeChanged
@@ -821,6 +838,7 @@ Public Class dlgSettings
         SetApplyButton(False)
         If sResult.NeedsDBClean_Movie OrElse
             sResult.NeedsDBClean_TV OrElse
+            sResult.NeedsPartialDownloadClean OrElse
             sResult.NeedsDBUpdate_Movie OrElse
             sResult.NeedsDBUpdate_TV OrElse
             sResult.NeedsPlexIgnoreClean_Movie OrElse
@@ -3571,6 +3589,11 @@ Public Class dlgSettings
             RefreshFileSystemValidExts()
             RefreshFileSystemValidSubtitlesExts()
             RefreshFileSystemValidThemeExts()
+            chkExcludePartialDownloadFiles.Checked = .ExcludePartialDownloadFiles
+            txtPartialDownloadExcludePattern.Text = .PartialDownloadExcludePattern
+            _loadedExcludePartialDownloadFiles = .ExcludePartialDownloadFiles
+            _loadedPartialDownloadExcludePattern = .PartialDownloadExcludePattern
+            UpdatePartialDownloadControlsEnabled()
 
             '***************************************************
             '******************* Movie Part ********************
@@ -3930,6 +3953,7 @@ Public Class dlgSettings
         sResult.NeedsPlexIgnoreClean_TV = False
         sResult.PlexIgnoreCleanSourceId_Movie = -1
         sResult.PlexIgnoreCleanSourceId_TV = -1
+        sResult.NeedsPartialDownloadClean = False
         sResult.DidCancel = False
         didApply = False
         NoUpdate = False
@@ -4950,6 +4974,9 @@ Public Class dlgSettings
         With Master.eSettings
             .FileSystemNoStackExts.Clear()
             .FileSystemNoStackExts.AddRange(lstFileSystemNoStackExts.Items.OfType(Of String).ToList)
+            .ExcludePartialDownloadFiles = chkExcludePartialDownloadFiles.Checked
+            .PartialDownloadExcludePattern = txtPartialDownloadExcludePattern.Text.Trim()
+            PartialDownloadFilter.InvalidateCache()
             .FileSystemValidExts.Clear()
             .FileSystemValidExts.AddRange(lstFileSystemValidVideoExts.Items.OfType(Of String).ToList)
             .FileSystemValidSubtitlesExts.Clear()
@@ -6968,6 +6995,21 @@ Public Class dlgSettings
         gbFileSystemValidVideoExts.Text = Master.eLang.GetString(534, "Valid Video Extensions")
         gbFileSystemValidSubtitlesExts.Text = Master.eLang.GetString(1284, "Valid Subtitles Extensions")
         gbFileSystemValidThemeExts.Text = Master.eLang.GetString(1081, "Valid Theme Extensions")
+        gbPartialDownloadExclude.Text = "Partial Download Files" 'FIXME: i18n
+        chkExcludePartialDownloadFiles.Text = "Exclude partial download files (BitTorrent, uTorrent, etc.)" 'FIXME: i18n
+        lblPartialDownloadExcludePattern.Text = "Filename pattern (regex):" 'FIXME: i18n
+        btnPartialDownloadExcludePatternReset.Text = "Reset" 'FIXME: i18n
+        ttPartialDownloadExclude.SetToolTip(pbPartialDownloadInfo, String.Join(Environment.NewLine, New String() {
+            "Skips incomplete download artifacts during scan and database clean.", 'FIXME: i18n
+            "",
+            "Required for ~*PartFile*.dat files (.dat is a valid video extension).", 'FIXME: i18n
+            "",
+            "Also covers common torrent client suffixes (.part, .!ut, .!qB, etc.) as defense-in-depth.", 'FIXME: i18n
+            "",
+            "Does not detect in-progress downloads saved under their final filename (e.g. movie.mkv).", 'FIXME: i18n
+            "",
+            "After enabling or changing the pattern, applying settings runs a database clean automatically. You can also use Tools -> Clean Database." 'FIXME: i18n
+        }))
         gbGeneralDaemon.Text = Master.eLang.GetString(1261, "Configuration ISO Filescanning")
         gbGeneralDateAdded.Text = Master.eLang.GetString(792, "Adding Date")
         gbGeneralInterface.Text = Master.eLang.GetString(795, "Interface")
@@ -7325,6 +7367,23 @@ Public Class dlgSettings
         SetApplyButton(True)
         sResult.NeedsDBClean_TV = True
         sResult.NeedsDBUpdate_TV = True
+    End Sub
+
+    Private Sub chkExcludePartialDownloadFiles_CheckedChanged(ByVal sender As Object, ByVal e As EventArgs) Handles chkExcludePartialDownloadFiles.CheckedChanged
+        UpdatePartialDownloadControlsEnabled()
+        MarkNeedsPartialDownloadCleanIfApplicable()
+        SetApplyButton(True)
+    End Sub
+
+    Private Sub txtPartialDownloadExcludePattern_TextChanged(ByVal sender As Object, ByVal e As EventArgs) Handles txtPartialDownloadExcludePattern.TextChanged
+        MarkNeedsPartialDownloadCleanIfApplicable()
+        SetApplyButton(True)
+    End Sub
+
+    Private Sub btnPartialDownloadExcludePatternReset_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnPartialDownloadExcludePatternReset.Click
+        txtPartialDownloadExcludePattern.Text = PartialDownloadFilter.DefaultPattern
+        MarkNeedsPartialDownloadCleanIfApplicable()
+        SetApplyButton(True)
     End Sub
 
     Private Sub txtTVScraperDefFIExt_TextChanged(ByVal sender As Object, ByVal e As EventArgs) Handles txtTVScraperDefFIExt.TextChanged

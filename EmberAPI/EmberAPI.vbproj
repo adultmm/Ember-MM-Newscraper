@@ -195,6 +195,8 @@
     <Compile Include="clsAPITaskManager.vb" />
     <Compile Include="clsAPICommon.vb" />
     <Compile Include="clsAPIDatabase.vb" />
+    <Compile Include="clsPartialDownloadFilter.vb" />
+    <Compile Include="PartialDownloadSidecarHelper.vb" />
     <Compile Include="clsPlexIgnore.vb" />
     <Compile Include="clsAPIDVD.vb" />
     <Compile Include="clsAPIFileUtils.vb" />
