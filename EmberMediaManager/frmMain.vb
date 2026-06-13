@@ -109,6 +109,8 @@ Public Class frmMain
     Private prevRow_TVEpisode As Integer = -1
     Private prevRow_TVSeason As Integer = -1
     Private prevRow_TVShow As Integer = -1
+    Private _batchScrapeFollowUpdatingPanel As Boolean = False
+    Private _batchScrapeFollowExpectedMovieId As Long = -1
 
     'list movies
     Private currList_Movies As String = "movielist" 'default movie list SQLite view
@@ -232,7 +234,7 @@ Public Class frmMain
     Delegate Sub MySettingsShow(ByVal dlg As dlgSettings)
 
     Delegate Sub Delegate_RefreshRow_Movie(ByVal MovieID As Long)
-
+    Delegate Sub Delegate_FollowBatchScrapeItem(ByVal ItemID As Long)
 
 #End Region 'Delegates
 
@@ -566,12 +568,14 @@ Public Class frmMain
         If bwLoadImages_TVSeason.IsBusy Then bwLoadImages_TVSeason.CancelAsync()
         If bwLoadImages_TVEpisode.IsBusy Then bwLoadImages_TVEpisode.CancelAsync()
 
-        While bwDownloadPic.IsBusy OrElse bwLoadImages_Movie.IsBusy OrElse bwLoadImages_MovieSet.IsBusy OrElse
-                    bwLoadImages_TVShow.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVEpisode.IsBusy OrElse
-                    bwLoadImages_MovieSetMoviePosters.IsBusy
-            Application.DoEvents()
-            Threading.Thread.Sleep(50)
-        End While
+        If Not _batchScrapeFollowUpdatingPanel Then
+            While bwDownloadPic.IsBusy OrElse bwLoadImages_Movie.IsBusy OrElse bwLoadImages_MovieSet.IsBusy OrElse
+                        bwLoadImages_TVShow.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVEpisode.IsBusy OrElse
+                        bwLoadImages_MovieSetMoviePosters.IsBusy
+                Application.DoEvents()
+                Threading.Thread.Sleep(50)
+            End While
+        End If
 
         If pbFanart.Image IsNot Nothing Then
             pbFanart.Image.Dispose()
@@ -746,8 +750,19 @@ Public Class frmMain
 
         InfoCleared = True
 
-        Application.DoEvents()
+        If Not _batchScrapeFollowUpdatingPanel AndAlso Not (Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso AnyBatchScraperBusy()) Then
+            Application.DoEvents()
+        End If
     End Sub
+
+    Private Function ShouldSkipStaleInfoPanelImages_Movie() As Boolean
+        If _batchScrapeFollowExpectedMovieId >= 0 AndAlso currMovie.ID <> _batchScrapeFollowExpectedMovieId Then Return True
+        If Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso AnyBatchScraperBusy() AndAlso
+            dgvMovies.SelectedRows.Count > 0 AndAlso Convert.ToInt64(dgvMovies.SelectedRows(0).Cells("idMovie").Value) <> currMovie.ID Then
+            Return True
+        End If
+        Return False
+    End Function
 
     Private Function CheckColumnHide_Movies(ByVal ColumnName As String) As Boolean
         Dim lsColumn As Settings.ListSorting = Master.eSettings.MovieGeneralMediaListSorting.FirstOrDefault(Function(l) l.Column = ColumnName)
@@ -1775,7 +1790,7 @@ Public Class frmMain
     End Sub
 
     Private Sub bwLoadImages_Movie_RunWorkerCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwLoadImages_Movie.RunWorkerCompleted
-        If Not e.Cancelled Then
+        If Not e.Cancelled AndAlso Not ShouldSkipStaleInfoPanelImages_Movie() Then
             FillScreenInfoWithImages()
         End If
     End Sub
@@ -2118,6 +2133,7 @@ Public Class frmMain
 
             If bwMovieScraper.CancellationPending Then Exit For
             OldListTitle = tScrapeItem.DataRow.Item("ListTitle").ToString
+            ReportBatchScrapeFollowProgress(bwMovieScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idMovie")))
             bwMovieScraper.ReportProgress(1, OldListTitle)
 
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
@@ -2266,6 +2282,8 @@ Public Class frmMain
             ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"moviescraped", 3, Master.eLang.GetString(813, "Movie Scraped"), e.UserState.ToString, Nothing}))
         ElseIf e.ProgressPercentage = -2 Then
             RefreshRow_Movie(CLng(e.UserState))
+        ElseIf e.ProgressPercentage = -4 Then
+            FollowBatchScrapeItem_Movie(CLng(e.UserState))
         ElseIf e.ProgressPercentage = -3 Then
             tslLoading.Text = e.UserState.ToString
         Else
@@ -2330,6 +2348,7 @@ Public Class frmMain
             OldListTitle = tScrapeItem.DataRow.Item("ListTitle").ToString
             OldTitle = tScrapeItem.DataRow.Item("SetName").ToString
             OldTMDBColID = tScrapeItem.DataRow.Item("TMDBColID").ToString
+            ReportBatchScrapeFollowProgress(bwMovieSetScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idSet")))
             bwMovieSetScraper.ReportProgress(1, OldListTitle)
 
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
@@ -2424,6 +2443,8 @@ Public Class frmMain
             ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"moviesetscraped", 3, Master.eLang.GetString(1204, "MovieSet Scraped"), e.UserState.ToString, Nothing}))
         ElseIf e.ProgressPercentage = -2 Then
             RefreshRow_MovieSet(CLng(e.UserState))
+        ElseIf e.ProgressPercentage = -4 Then
+            FollowBatchScrapeItem_MovieSet(CLng(e.UserState))
         ElseIf e.ProgressPercentage = -3 Then
             tslLoading.Text = e.UserState.ToString
         Else
@@ -2480,6 +2501,7 @@ Public Class frmMain
 
             If bwTVScraper.CancellationPending Then Exit For
             OldListTitle = tScrapeItem.DataRow.Item("ListTitle").ToString
+            ReportBatchScrapeFollowProgress(bwTVScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idShow")))
             bwTVScraper.ReportProgress(1, OldListTitle)
 
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
@@ -2591,6 +2613,8 @@ Public Class frmMain
             ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"tvshowscraped", 3, Master.eLang.GetString(248, "Show Scraped"), e.UserState.ToString, Nothing}))
         ElseIf e.ProgressPercentage = -2 Then
             RefreshRow_TVShow(CLng(e.UserState))
+        ElseIf e.ProgressPercentage = -4 Then
+            FollowBatchScrapeItem_TVShow(CLng(e.UserState))
         ElseIf e.ProgressPercentage = -3 Then
             tslLoading.Text = e.UserState.ToString
         Else
@@ -2645,6 +2669,7 @@ Public Class frmMain
 
             If bwTVEpisodeScraper.CancellationPending Then Exit For
             OldEpisodeTitle = tScrapeItem.DataRow.Item("Title").ToString
+            ReportBatchScrapeFollowProgress(bwTVEpisodeScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idEpisode")))
             bwTVEpisodeScraper.ReportProgress(1, OldEpisodeTitle)
 
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
@@ -2732,6 +2757,8 @@ Public Class frmMain
             ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"tvepisodescraped", 3, Master.eLang.GetString(883, "Episode Scraped"), e.UserState.ToString, Nothing}))
         ElseIf e.ProgressPercentage = -2 Then
             RefreshRow_TVEpisode(CLng(e.UserState))
+        ElseIf e.ProgressPercentage = -4 Then
+            FollowBatchScrapeItem_TVEpisode(CLng(e.UserState))
         ElseIf e.ProgressPercentage = -3 Then
             tslLoading.Text = e.UserState.ToString
         Else
@@ -2788,6 +2815,7 @@ Public Class frmMain
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
 
             DBScrapeSeason = Master.DB.Load_TVSeason(Convert.ToInt64(tScrapeItem.DataRow.Item("idSeason")), True, False)
+            ReportBatchScrapeFollowProgress(bwTVSeasonScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idSeason")))
             'ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.BeforeEdit_Movie, Nothing, DBScrapeMovie)
 
             logger.Trace(String.Format("Start scraping: {0}: Season {1}", DBScrapeSeason.TVShow.Title, DBScrapeSeason.TVSeason.Season))
@@ -2863,6 +2891,8 @@ Public Class frmMain
             ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.Notification, New List(Of Object)(New Object() {"tvseasonscraped", 3, Master.eLang.GetString(247, "Season Scraped"), e.UserState.ToString, Nothing}))
         ElseIf e.ProgressPercentage = -2 Then
             RefreshRow_TVSeason(CLng(e.UserState))
+        ElseIf e.ProgressPercentage = -4 Then
+            FollowBatchScrapeItem_TVSeason(CLng(e.UserState))
         ElseIf e.ProgressPercentage = -3 Then
             tslLoading.Text = e.UserState.ToString
         Else
@@ -5884,6 +5914,7 @@ Public Class frmMain
     Private Sub dgvMovies_CellEnter(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellEventArgs) Handles dgvMovies.CellEnter
         Dim currMainTabTag As Structures.MainTabType = DirectCast(tcMain.SelectedTab.Tag, Structures.MainTabType)
         If Not currMainTabTag.ContentType = Enums.ContentType.Movie Then Return
+        If _batchScrapeFollowUpdatingPanel Then Return
 
         tmrWait_TVShow.Stop()
         tmrWait_TVSeason.Stop()
@@ -10197,11 +10228,13 @@ Public Class frmMain
 
         InfoCleared = False
 
-        If bDoingSearch_Movies Then
-            txtSearchMovies.Focus()
-            bDoingSearch_Movies = False
-        Else
-            dgvMovies.Focus()
+        If Not AnyBatchScraperBusy() Then
+            If bDoingSearch_Movies Then
+                txtSearchMovies.Focus()
+                bDoingSearch_Movies = False
+            Else
+                dgvMovies.Focus()
+            End If
         End If
 
         If pbMPAA.Image IsNot Nothing Then pnlMPAA.Visible = True
@@ -11659,9 +11692,11 @@ Public Class frmMain
             bwLoadImages_Movie.CancelAsync()
         End If
 
-        While bwLoadImages_Movie.IsBusy
-            Application.DoEvents()
-        End While
+        If Not _batchScrapeFollowUpdatingPanel Then
+            While bwLoadImages_Movie.IsBusy
+                Application.DoEvents()
+            End While
+        End If
 
         bwLoadImages_Movie = New ComponentModel.BackgroundWorker
         bwLoadImages_Movie.WorkerSupportsCancellation = True
@@ -11679,9 +11714,11 @@ Public Class frmMain
             bwLoadImages_MovieSet.CancelAsync()
         End If
 
-        While bwLoadImages_MovieSet.IsBusy
-            Application.DoEvents()
-        End While
+        If Not _batchScrapeFollowUpdatingPanel Then
+            While bwLoadImages_MovieSet.IsBusy
+                Application.DoEvents()
+            End While
+        End If
 
         bwLoadImages_MovieSet = New ComponentModel.BackgroundWorker
         bwLoadImages_MovieSet.WorkerSupportsCancellation = True
@@ -11701,9 +11738,11 @@ Public Class frmMain
             bwLoadImages_TVEpisode.CancelAsync()
         End If
 
-        While bwLoadImages_TVEpisode.IsBusy
-            Application.DoEvents()
-        End While
+        If Not _batchScrapeFollowUpdatingPanel Then
+            While bwLoadImages_TVEpisode.IsBusy
+                Application.DoEvents()
+            End While
+        End If
 
         bwLoadImages_TVEpisode = New ComponentModel.BackgroundWorker
         bwLoadImages_TVEpisode.WorkerSupportsCancellation = True
@@ -11723,9 +11762,11 @@ Public Class frmMain
             bwLoadImages_TVSeason.CancelAsync()
         End If
 
-        While bwLoadImages_TVSeason.IsBusy
-            Application.DoEvents()
-        End While
+        If Not _batchScrapeFollowUpdatingPanel Then
+            While bwLoadImages_TVSeason.IsBusy
+                Application.DoEvents()
+            End While
+        End If
 
         bwLoadImages_TVSeason = New ComponentModel.BackgroundWorker
         bwLoadImages_TVSeason.WorkerSupportsCancellation = True
@@ -11745,9 +11786,11 @@ Public Class frmMain
             bwLoadImages_TVShow.CancelAsync()
         End If
 
-        While bwLoadImages_TVShow.IsBusy
-            Application.DoEvents()
-        End While
+        If Not _batchScrapeFollowUpdatingPanel Then
+            While bwLoadImages_TVShow.IsBusy
+                Application.DoEvents()
+            End While
+        End If
 
 
         bwLoadImages_TVShow = New ComponentModel.BackgroundWorker
@@ -15640,7 +15683,11 @@ Public Class frmMain
         End If
 
         If dgvMovies.Visible AndAlso dgvMovies.SelectedRows.Count > 0 AndAlso CInt(dgvMovies.SelectedRows(0).Cells("idMovie").Value) = MovieID Then
-            SelectRow_Movie(dgvMovies.SelectedRows(0).Index)
+            If Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso AnyBatchScraperBusy() Then
+                ReloadBatchScrapeInfoPanel_Movie(MovieID)
+            Else
+                SelectRow_Movie(dgvMovies.SelectedRows(0).Index)
+            End If
         End If
 
         dgvMovies.Invalidate()
@@ -15671,7 +15718,11 @@ Public Class frmMain
         End If
 
         If dgvMovieSets.Visible AndAlso dgvMovieSets.SelectedRows.Count > 0 AndAlso CInt(dgvMovieSets.SelectedRows(0).Cells("idSet").Value) = MovieSetID Then
-            SelectRow_MovieSet(dgvMovieSets.SelectedRows(0).Index)
+            If Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso AnyBatchScraperBusy() Then
+                ReloadBatchScrapeInfoPanel_MovieSet(MovieSetID)
+            Else
+                SelectRow_MovieSet(dgvMovieSets.SelectedRows(0).Index)
+            End If
         End If
 
         dgvMovieSets.Invalidate()
@@ -15707,7 +15758,11 @@ Public Class frmMain
             End If
 
             If dgvTVEpisodes.Visible AndAlso dgvTVEpisodes.SelectedRows.Count > 0 AndAlso CInt(dgvTVEpisodes.SelectedRows(0).Cells("idEpisode").Value) = EpisodeID AndAlso currList = 2 Then
-                SelectRow_TVEpisode(dgvTVEpisodes.SelectedRows(0).Index)
+                If Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso AnyBatchScraperBusy() Then
+                    ReloadBatchScrapeInfoPanel_TVEpisode(EpisodeID)
+                Else
+                    SelectRow_TVEpisode(dgvTVEpisodes.SelectedRows(0).Index)
+                End If
             End If
 
             dgvTVEpisodes.Invalidate()
@@ -15744,7 +15799,11 @@ Public Class frmMain
             End If
 
             If dgvTVSeasons.Visible AndAlso dgvTVSeasons.SelectedRows.Count > 0 AndAlso CInt(dgvTVSeasons.SelectedRows(0).Cells("idSeason").Value) = SeasonID AndAlso currList = 1 Then
-                SelectRow_TVSeason(dgvTVSeasons.SelectedRows(0).Index)
+                If Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso AnyBatchScraperBusy() Then
+                    ReloadBatchScrapeInfoPanel_TVSeason(SeasonID)
+                Else
+                    SelectRow_TVSeason(dgvTVSeasons.SelectedRows(0).Index)
+                End If
             End If
 
             dgvTVSeasons.Invalidate()
@@ -15788,7 +15847,11 @@ Public Class frmMain
         End If
 
         If dgvTVShows.Visible AndAlso dgvTVShows.SelectedRows.Count > 0 AndAlso CInt(dgvTVShows.SelectedRows(0).Cells("idShow").Value) = ShowID AndAlso (currList = 0 OrElse Force) Then
-            SelectRow_TVShow(dgvTVShows.SelectedRows(0).Index)
+            If Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso AnyBatchScraperBusy() Then
+                ReloadBatchScrapeInfoPanel_TVShow(ShowID)
+            Else
+                SelectRow_TVShow(dgvTVShows.SelectedRows(0).Index)
+            End If
         End If
 
         dgvTVShows.Invalidate()
@@ -16502,6 +16565,305 @@ Public Class frmMain
             logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
+
+    Private Function IsBatchScrapeType(ByVal scrapeType As Enums.ScrapeType) As Boolean
+        Select Case scrapeType
+            Case Enums.ScrapeType.SingleScrape, Enums.ScrapeType.SingleAuto, Enums.ScrapeType.SingleField
+                Return False
+            Case Else
+                Return True
+        End Select
+    End Function
+
+    Private Function AnyBatchScraperBusy() As Boolean
+        Return bwMovieScraper.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwTVScraper.IsBusy OrElse
+            bwTVEpisodeScraper.IsBusy OrElse bwTVSeasonScraper.IsBusy
+    End Function
+
+    Private Sub ReportBatchScrapeFollowProgress(ByVal worker As ComponentModel.BackgroundWorker, ByVal scrapeType As Enums.ScrapeType, ByVal itemId As Long)
+        If Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso IsBatchScrapeType(scrapeType) Then
+            worker.ReportProgress(-4, itemId)
+        End If
+    End Sub
+
+    Private Function GetDataGridViewRowIndexById(ByVal dgv As DataGridView, ByVal idColumn As String, ByVal itemId As Long) As Integer
+        For Each drvRow As DataGridViewRow In dgv.Rows
+            If Convert.ToInt64(drvRow.Cells(idColumn).Value) = itemId Then
+                Return drvRow.Index
+            End If
+        Next
+        Return -1
+    End Function
+
+    Private Sub SelectDataGridViewRowForBatchScrape(ByVal dgv As DataGridView, ByVal rowIndex As Integer, ByVal displayColumn As String)
+        If rowIndex < 0 OrElse rowIndex >= dgv.Rows.Count Then Return
+
+        dgv.CurrentCell = Nothing
+        dgv.ClearSelection()
+
+        If Not dgv.Rows(rowIndex).Displayed Then
+            Try
+                dgv.FirstDisplayedScrollingRowIndex = rowIndex
+            Catch
+            End Try
+        End If
+
+        dgv.Rows(rowIndex).Selected = True
+        dgv.CurrentCell = dgv.Item(displayColumn, rowIndex)
+    End Sub
+
+    Private Sub StopInfoPanelLoadTimers()
+        tmrWait_TVShow.Stop()
+        tmrWait_TVSeason.Stop()
+        tmrWait_TVEpisode.Stop()
+        tmrWait_MovieSet.Stop()
+        tmrWait_Movie.Stop()
+        tmrLoad_TVShow.Stop()
+        tmrLoad_TVSeason.Stop()
+        tmrLoad_TVEpisode.Stop()
+        tmrLoad_MovieSet.Stop()
+        tmrLoad_Movie.Stop()
+    End Sub
+
+    Private Sub FollowBatchScrapeItem_Movie(ByVal movieId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf FollowBatchScrapeItem_Movie), {movieId})
+            Return
+        End If
+
+        Dim currMainTabTag As Structures.MainTabType = DirectCast(tcMain.SelectedTab.Tag, Structures.MainTabType)
+        If Not currMainTabTag.ContentType = Enums.ContentType.Movie Then Return
+        If Not dgvMovies.Visible OrElse dgvMovies.RowCount = 0 Then Return
+
+        Dim rowIndex As Integer = GetDataGridViewRowIndexById(dgvMovies, "idMovie", movieId)
+        If rowIndex < 0 Then Return
+
+        RemoveHandler dgvMovies.CellEnter, AddressOf dgvMovies_CellEnter
+        _batchScrapeFollowUpdatingPanel = True
+        _batchScrapeFollowExpectedMovieId = movieId
+        Try
+            StopInfoPanelLoadTimers()
+            SelectDataGridViewRowForBatchScrape(dgvMovies, rowIndex, "ListTitle")
+            currRow_Movie = rowIndex
+            prevRow_Movie = rowIndex
+            LoadInfo_Movie(movieId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowExpectedMovieId = -1
+            _batchScrapeFollowUpdatingPanel = False
+            AddHandler dgvMovies.CellEnter, AddressOf dgvMovies_CellEnter
+        End Try
+    End Sub
+
+    Private Sub ReloadBatchScrapeInfoPanel_Movie(ByVal movieId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel OrElse Not AnyBatchScraperBusy() Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf ReloadBatchScrapeInfoPanel_Movie), {movieId})
+            Return
+        End If
+        If dgvMovies.SelectedRows.Count = 0 OrElse Convert.ToInt64(dgvMovies.SelectedRows(0).Cells("idMovie").Value) <> movieId Then Return
+
+        _batchScrapeFollowUpdatingPanel = True
+        _batchScrapeFollowExpectedMovieId = movieId
+        Try
+            StopInfoPanelLoadTimers()
+            LoadInfo_Movie(movieId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowExpectedMovieId = -1
+            _batchScrapeFollowUpdatingPanel = False
+        End Try
+    End Sub
+
+    Private Sub ReloadBatchScrapeInfoPanel_MovieSet(ByVal movieSetId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel OrElse Not AnyBatchScraperBusy() Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf ReloadBatchScrapeInfoPanel_MovieSet), {movieSetId})
+            Return
+        End If
+        If dgvMovieSets.SelectedRows.Count = 0 OrElse Convert.ToInt64(dgvMovieSets.SelectedRows(0).Cells("idSet").Value) <> movieSetId Then Return
+
+        _batchScrapeFollowUpdatingPanel = True
+        Try
+            StopInfoPanelLoadTimers()
+            LoadInfo_MovieSet(movieSetId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowUpdatingPanel = False
+        End Try
+    End Sub
+
+    Private Sub ReloadBatchScrapeInfoPanel_TVShow(ByVal showId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel OrElse Not AnyBatchScraperBusy() Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf ReloadBatchScrapeInfoPanel_TVShow), {showId})
+            Return
+        End If
+        If dgvTVShows.SelectedRows.Count = 0 OrElse Convert.ToInt64(dgvTVShows.SelectedRows(0).Cells("idShow").Value) <> showId Then Return
+
+        _batchScrapeFollowUpdatingPanel = True
+        Try
+            StopInfoPanelLoadTimers()
+            LoadInfo_TVShow(showId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowUpdatingPanel = False
+        End Try
+    End Sub
+
+    Private Sub ReloadBatchScrapeInfoPanel_TVSeason(ByVal seasonId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel OrElse Not AnyBatchScraperBusy() Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf ReloadBatchScrapeInfoPanel_TVSeason), {seasonId})
+            Return
+        End If
+        If dgvTVSeasons.SelectedRows.Count = 0 OrElse Convert.ToInt64(dgvTVSeasons.SelectedRows(0).Cells("idSeason").Value) <> seasonId Then Return
+
+        _batchScrapeFollowUpdatingPanel = True
+        Try
+            StopInfoPanelLoadTimers()
+            LoadInfo_TVSeason(seasonId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowUpdatingPanel = False
+        End Try
+    End Sub
+
+    Private Sub ReloadBatchScrapeInfoPanel_TVEpisode(ByVal episodeId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel OrElse Not AnyBatchScraperBusy() Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf ReloadBatchScrapeInfoPanel_TVEpisode), {episodeId})
+            Return
+        End If
+        If dgvTVEpisodes.SelectedRows.Count = 0 OrElse Convert.ToInt64(dgvTVEpisodes.SelectedRows(0).Cells("idEpisode").Value) <> episodeId Then Return
+
+        _batchScrapeFollowUpdatingPanel = True
+        Try
+            StopInfoPanelLoadTimers()
+            LoadInfo_TVEpisode(episodeId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowUpdatingPanel = False
+        End Try
+    End Sub
+
+    Private Sub FollowBatchScrapeItem_MovieSet(ByVal movieSetId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf FollowBatchScrapeItem_MovieSet), {movieSetId})
+            Return
+        End If
+
+        Dim currMainTabTag As Structures.MainTabType = DirectCast(tcMain.SelectedTab.Tag, Structures.MainTabType)
+        If Not currMainTabTag.ContentType = Enums.ContentType.MovieSet Then Return
+        If Not dgvMovieSets.Visible OrElse dgvMovieSets.RowCount = 0 Then Return
+
+        Dim rowIndex As Integer = GetDataGridViewRowIndexById(dgvMovieSets, "idSet", movieSetId)
+        If rowIndex < 0 Then Return
+
+        RemoveHandler dgvMovieSets.CellEnter, AddressOf dgvMovieSets_CellEnter
+        _batchScrapeFollowUpdatingPanel = True
+        Try
+            StopInfoPanelLoadTimers()
+            SelectDataGridViewRowForBatchScrape(dgvMovieSets, rowIndex, "ListTitle")
+            currRow_MovieSet = rowIndex
+            prevRow_MovieSet = rowIndex
+            LoadInfo_MovieSet(movieSetId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowUpdatingPanel = False
+            AddHandler dgvMovieSets.CellEnter, AddressOf dgvMovieSets_CellEnter
+        End Try
+    End Sub
+
+    Private Sub FollowBatchScrapeItem_TVShow(ByVal showId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf FollowBatchScrapeItem_TVShow), {showId})
+            Return
+        End If
+
+        Dim currMainTabTag As Structures.MainTabType = DirectCast(tcMain.SelectedTab.Tag, Structures.MainTabType)
+        If Not currMainTabTag.ContentType = Enums.ContentType.TV Then Return
+        If currList <> 0 OrElse Not dgvTVShows.Visible OrElse dgvTVShows.RowCount = 0 Then Return
+
+        Dim rowIndex As Integer = GetDataGridViewRowIndexById(dgvTVShows, "idShow", showId)
+        If rowIndex < 0 Then Return
+
+        RemoveHandler dgvTVShows.CellEnter, AddressOf dgvTVShows_CellEnter
+        _batchScrapeFollowUpdatingPanel = True
+        Try
+            StopInfoPanelLoadTimers()
+            SelectDataGridViewRowForBatchScrape(dgvTVShows, rowIndex, "ListTitle")
+            currRow_TVShow = rowIndex
+            prevRow_TVShow = rowIndex
+            LoadInfo_TVShow(showId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowUpdatingPanel = False
+            AddHandler dgvTVShows.CellEnter, AddressOf dgvTVShows_CellEnter
+        End Try
+    End Sub
+
+    Private Sub FollowBatchScrapeItem_TVSeason(ByVal seasonId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf FollowBatchScrapeItem_TVSeason), {seasonId})
+            Return
+        End If
+
+        Dim currMainTabTag As Structures.MainTabType = DirectCast(tcMain.SelectedTab.Tag, Structures.MainTabType)
+        If Not currMainTabTag.ContentType = Enums.ContentType.TV Then Return
+        If currList <> 1 OrElse Not dgvTVSeasons.Visible OrElse dgvTVSeasons.RowCount = 0 Then Return
+
+        Dim rowIndex As Integer = GetDataGridViewRowIndexById(dgvTVSeasons, "idSeason", seasonId)
+        If rowIndex < 0 Then Return
+
+        RemoveHandler dgvTVSeasons.CellEnter, AddressOf dgvTVSeasons_CellEnter
+        _batchScrapeFollowUpdatingPanel = True
+        Try
+            StopInfoPanelLoadTimers()
+            SelectDataGridViewRowForBatchScrape(dgvTVSeasons, rowIndex, "SeasonText")
+            currRow_TVSeason = rowIndex
+            prevRow_TVSeason = rowIndex
+            LoadInfo_TVSeason(seasonId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowUpdatingPanel = False
+            AddHandler dgvTVSeasons.CellEnter, AddressOf dgvTVSeasons_CellEnter
+        End Try
+    End Sub
+
+    Private Sub FollowBatchScrapeItem_TVEpisode(ByVal episodeId As Long)
+        If Not Master.eSettings.GeneralBatchScrapeFollowInfoPanel Then Return
+        If Me.InvokeRequired Then
+            Me.Invoke(New Delegate_FollowBatchScrapeItem(AddressOf FollowBatchScrapeItem_TVEpisode), {episodeId})
+            Return
+        End If
+
+        Dim currMainTabTag As Structures.MainTabType = DirectCast(tcMain.SelectedTab.Tag, Structures.MainTabType)
+        If Not currMainTabTag.ContentType = Enums.ContentType.TV Then Return
+        If currList <> 2 OrElse Not dgvTVEpisodes.Visible OrElse dgvTVEpisodes.RowCount = 0 Then Return
+
+        Dim rowIndex As Integer = GetDataGridViewRowIndexById(dgvTVEpisodes, "idEpisode", episodeId)
+        If rowIndex < 0 Then Return
+
+        RemoveHandler dgvTVEpisodes.CellEnter, AddressOf dgvTVEpisodes_CellEnter
+        _batchScrapeFollowUpdatingPanel = True
+        Try
+            StopInfoPanelLoadTimers()
+            SelectDataGridViewRowForBatchScrape(dgvTVEpisodes, rowIndex, "Title")
+            currRow_TVEpisode = rowIndex
+            prevRow_TVEpisode = rowIndex
+            LoadInfo_TVEpisode(episodeId)
+            pnlInfoPanel.Refresh()
+        Finally
+            _batchScrapeFollowUpdatingPanel = False
+            AddHandler dgvTVEpisodes.CellEnter, AddressOf dgvTVEpisodes_CellEnter
+        End Try
+    End Sub
+
     ''' <summary>
     ''' Updates the media info panels (right side of disiplay) when the movie selector changes (left side of display)
     ''' </summary>
@@ -18367,6 +18729,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrLoad_Movie_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrLoad_Movie.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrWait_Movie.Stop()
+            tmrLoad_Movie.Stop()
+            Return
+        End If
+
         tmrWait_Movie.Stop()
         tmrLoad_Movie.Stop()
 
@@ -18374,6 +18742,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrLoad_MovieSet_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrLoad_MovieSet.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrWait_MovieSet.Stop()
+            tmrLoad_MovieSet.Stop()
+            Return
+        End If
+
         tmrWait_MovieSet.Stop()
         tmrLoad_MovieSet.Stop()
 
@@ -18381,6 +18755,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrLoad_TVEpisode_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrLoad_TVEpisode.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrWait_TVEpisode.Stop()
+            tmrLoad_TVEpisode.Stop()
+            Return
+        End If
+
         tmrWait_TVEpisode.Stop()
         tmrLoad_TVEpisode.Stop()
 
@@ -18388,6 +18768,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrLoad_TVSeason_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrLoad_TVSeason.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrWait_TVSeason.Stop()
+            tmrLoad_TVSeason.Stop()
+            Return
+        End If
+
         tmrWait_TVSeason.Stop()
         tmrLoad_TVSeason.Stop()
 
@@ -18395,6 +18781,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrLoad_TVShow_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrLoad_TVShow.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrWait_TVShow.Stop()
+            tmrLoad_TVShow.Stop()
+            Return
+        End If
+
         tmrWait_TVShow.Stop()
         tmrLoad_TVShow.Stop()
 
@@ -18545,6 +18937,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrWait_TVEpisode_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrWait_TVEpisode.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrLoad_TVEpisode.Stop()
+            tmrWait_TVEpisode.Stop()
+            Return
+        End If
+
         tmrLoad_TVSeason.Stop()
         tmrLoad_TVShow.Stop()
         tmrWait_TVSeason.Stop()
@@ -18561,6 +18959,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrWait_TVSeason_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrWait_TVSeason.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrLoad_TVSeason.Stop()
+            tmrWait_TVSeason.Stop()
+            Return
+        End If
+
         tmrLoad_TVShow.Stop()
         tmrLoad_TVEpisode.Stop()
         tmrWait_TVShow.Stop()
@@ -18577,6 +18981,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrWait_TVShow_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrWait_TVShow.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrLoad_TVShow.Stop()
+            tmrWait_TVShow.Stop()
+            Return
+        End If
+
         tmrLoad_TVSeason.Stop()
         tmrLoad_TVEpisode.Stop()
         tmrWait_TVSeason.Stop()
@@ -18593,6 +19003,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrWait_Movie_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrWait_Movie.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrLoad_Movie.Stop()
+            tmrWait_Movie.Stop()
+            Return
+        End If
+
         If Not prevRow_Movie = currRow_Movie Then
             prevRow_Movie = currRow_Movie
             tmrWait_Movie.Stop()
@@ -18604,6 +19020,12 @@ Public Class frmMain
     End Sub
 
     Private Sub tmrWait_MovieSet_Tick(ByVal sender As Object, ByVal e As System.EventArgs) Handles tmrWait_MovieSet.Tick
+        If _batchScrapeFollowUpdatingPanel Then
+            tmrLoad_MovieSet.Stop()
+            tmrWait_MovieSet.Stop()
+            Return
+        End If
+
         If Not prevRow_MovieSet = currRow_MovieSet Then
             prevRow_MovieSet = currRow_MovieSet
             tmrWait_MovieSet.Stop()

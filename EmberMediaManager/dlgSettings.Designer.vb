@@ -233,6 +233,7 @@ Partial Class dlgSettings
         Me.chkGeneralDisplayImgNames = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDisplayClearArt = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDoubleClickScrape = New System.Windows.Forms.CheckBox()
+        Me.chkGeneralBatchScrapeFollowInfoPanel = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDisplayClearLogo = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDisplayBanner = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDisplayCharacterArt = New System.Windows.Forms.CheckBox()
@@ -4697,10 +4698,12 @@ Partial Class dlgSettings
         Me.tblGeneralMainWindow.Controls.Add(Me.chkGeneralDisplayLangFlags, 0, 3)
         Me.tblGeneralMainWindow.Controls.Add(Me.chkGeneralDisplayLandscape, 1, 6)
         Me.tblGeneralMainWindow.Controls.Add(Me.chkGeneralDisplayPoster, 1, 7)
+        Me.tblGeneralMainWindow.Controls.Add(Me.chkGeneralBatchScrapeFollowInfoPanel, 0, 9)
         Me.tblGeneralMainWindow.Dock = System.Windows.Forms.DockStyle.Fill
         Me.tblGeneralMainWindow.Location = New System.Drawing.Point(3, 18)
         Me.tblGeneralMainWindow.Name = "tblGeneralMainWindow"
-        Me.tblGeneralMainWindow.RowCount = 10
+        Me.tblGeneralMainWindow.RowCount = 11
+        Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
@@ -4762,6 +4765,19 @@ Partial Class dlgSettings
         Me.chkGeneralDoubleClickScrape.TabIndex = 19
         Me.chkGeneralDoubleClickScrape.Text = "Enable Image Scrape On Double Right Click"
         Me.chkGeneralDoubleClickScrape.UseVisualStyleBackColor = True
+        '
+        'chkGeneralBatchScrapeFollowInfoPanel
+        '
+        Me.chkGeneralBatchScrapeFollowInfoPanel.Anchor = System.Windows.Forms.AnchorStyles.Left
+        Me.chkGeneralBatchScrapeFollowInfoPanel.AutoSize = True
+        Me.tblGeneralMainWindow.SetColumnSpan(Me.chkGeneralBatchScrapeFollowInfoPanel, 2)
+        Me.chkGeneralBatchScrapeFollowInfoPanel.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.chkGeneralBatchScrapeFollowInfoPanel.Location = New System.Drawing.Point(3, 231)
+        Me.chkGeneralBatchScrapeFollowInfoPanel.Name = "chkGeneralBatchScrapeFollowInfoPanel"
+        Me.chkGeneralBatchScrapeFollowInfoPanel.Size = New System.Drawing.Size(286, 17)
+        Me.chkGeneralBatchScrapeFollowInfoPanel.TabIndex = 20
+        Me.chkGeneralBatchScrapeFollowInfoPanel.Text = "Follow current item in info panel during batch scrape"
+        Me.chkGeneralBatchScrapeFollowInfoPanel.UseVisualStyleBackColor = True
         '
         'chkGeneralDisplayClearLogo
         '
@@ -24623,6 +24639,7 @@ End Sub
     Friend WithEvents lblMovieGeneralCustomMarker1 As System.Windows.Forms.Label
     Friend WithEvents cdColor As System.Windows.Forms.ColorDialog
     Friend WithEvents chkGeneralDoubleClickScrape As System.Windows.Forms.CheckBox
+    Friend WithEvents chkGeneralBatchScrapeFollowInfoPanel As System.Windows.Forms.CheckBox
     Friend WithEvents pnlMovieSetGeneral As System.Windows.Forms.Panel
     Friend WithEvents gbMovieSetGeneralMiscOpts As System.Windows.Forms.GroupBox
     Friend WithEvents chkMovieSetClickScrape As System.Windows.Forms.CheckBox

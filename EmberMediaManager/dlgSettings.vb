@@ -2948,6 +2948,7 @@ Public Class dlgSettings
             chkGeneralImageFilterPoster.Checked = .GeneralImageFilterPoster
             txtGeneralImageFilterPosterMatchRate.Enabled = .GeneralImageFilterPoster
             chkGeneralDoubleClickScrape.Checked = .GeneralDoubleClickScrape
+            chkGeneralBatchScrapeFollowInfoPanel.Checked = .GeneralBatchScrapeFollowInfoPanel
             chkGeneralDisplayBanner.Checked = .GeneralDisplayBanner
             chkGeneralDisplayCharacterArt.Checked = .GeneralDisplayCharacterArt
             chkGeneralDisplayClearArt.Checked = .GeneralDisplayClearArt
@@ -4988,6 +4989,7 @@ Public Class dlgSettings
             .GeneralDigitGrpSymbolVotes = chkGeneralDigitGrpSymbolVotes.Checked
             .GeneralDateTime = CType(cbGeneralDateTime.SelectedItem, KeyValuePair(Of String, Enums.DateTime)).Value
             .GeneralDoubleClickScrape = chkGeneralDoubleClickScrape.Checked
+            .GeneralBatchScrapeFollowInfoPanel = chkGeneralBatchScrapeFollowInfoPanel.Checked
             .GeneralDaemonDrive = cbGeneralDaemonDrive.Text
             .GeneralDaemonPath = txtGeneralDaemonPath.Text
             .GeneralDisplayBanner = chkGeneralDisplayBanner.Checked
@@ -6921,6 +6923,8 @@ Public Class dlgSettings
         chkGeneralDateAddedIgnoreNFO.Text = Master.eLang.GetString(1209, "Ignore <dateadded> from NFO")
         chkGeneralDigitGrpSymbolVotes.Text = Master.eLang.GetString(1387, "Use digit grouping symbol for Votes count")
         chkGeneralDoubleClickScrape.Text = Master.eLang.GetString(1198, "Enable Image Scrape On Double Right Click")
+        'FIXME: i18n
+        chkGeneralBatchScrapeFollowInfoPanel.Text = Master.eLang.GetString(1361, "Follow current item in info panel during batch scrape")
         chkGeneralDisplayBanner.Text = Master.eLang.GetString(1146, "Display Banner")
         chkGeneralDisplayCharacterArt.Text = Master.eLang.GetString(1147, "Display CharacterArt")
         chkGeneralDisplayClearArt.Text = Master.eLang.GetString(1148, "Display ClearArt")
@@ -8197,6 +8201,7 @@ Public Class dlgSettings
         chkGeneralDisplayImgNames.CheckedChanged,
         chkGeneralDisplayLangFlags.CheckedChanged,
         chkGeneralDoubleClickScrape.CheckedChanged,
+        chkGeneralBatchScrapeFollowInfoPanel.CheckedChanged,
         chkGeneralImageFilterAutoscraper.CheckedChanged,
         chkGeneralImageFilterFanart.CheckedChanged,
         chkGeneralImageFilterImagedialog.CheckedChanged,

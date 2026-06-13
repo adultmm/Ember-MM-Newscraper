@@ -2072,6 +2072,15 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property GeneralBatchScrapeFollowInfoPanel() As Boolean
+        Get
+            Return Settings._XMLSettings.GeneralBatchScrapeFollowInfoPanel
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.GeneralBatchScrapeFollowInfoPanel = value
+        End Set
+    End Property
+
     Public Property TVShowThemeDefaultSearch() As String
         Get
             Return Settings._XMLSettings.TVShowThemeDefaultSearch
@@ -7086,6 +7095,7 @@ Public Class Settings
         GeneralDisplayLandscape = True
         GeneralDisplayPoster = True
         GeneralDoubleClickScrape = False
+        GeneralBatchScrapeFollowInfoPanel = False
         GeneralFilterPanelIsRaisedMovie = False
         GeneralFilterPanelIsRaisedMovieSet = False
         GeneralFilterPanelIsRaisedTVShow = False

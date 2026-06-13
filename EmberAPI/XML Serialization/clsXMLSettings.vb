@@ -49,6 +49,7 @@ Partial Public Class clsXMLSettings
     Private _generaldisplaylandscape As Boolean
     Private _generaldisplayposter As Boolean
     Private _generaldoubleclickscrape As Boolean
+    Private _generalbatchscrapefollowinfopanel As Boolean
     Private _generalfilterpanelisraisedmovie As Boolean
     Private _generalfilterpanelisraisedmovieset As Boolean
     Private _generalfilterpanelisraisedtvshow As Boolean
@@ -3061,6 +3062,15 @@ Partial Public Class clsXMLSettings
         End Get
         Set(ByVal value As Boolean)
             Me._generaldoubleclickscrape = value
+        End Set
+    End Property
+
+    Public Property GeneralBatchScrapeFollowInfoPanel() As Boolean
+        Get
+            Return Me._generalbatchscrapefollowinfopanel
+        End Get
+        Set(ByVal value As Boolean)
+            Me._generalbatchscrapefollowinfopanel = value
         End Set
     End Property
 
