@@ -976,7 +976,7 @@ Public Class ModulesManager
                 logger.Trace(String.Format("[ModulesManager] [ScrapeData_Movie] [Done] {0}", DBElement.Filename))
             Else
                 logger.Trace(String.Format("[ModulesManager] [ScrapeData_Movie] [Done] [No Scraper Results] {0}", DBElement.Filename))
-                Return True 'TODO: need a new trigger
+                Return False
             End If
             Return ret.Cancelled
         Else
