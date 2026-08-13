@@ -2143,8 +2143,9 @@ Public Class frmMain
             DBScrapeMovie = Master.DB.Load_Movie(Convert.ToInt64(tScrapeItem.DataRow.Item("idMovie")))
 
             If tScrapeItem.ScrapeModifiers.MainNFO Then
-                Dim scrapeCancelled As Boolean = ModulesManager.Instance.ScrapeData_Movie(DBScrapeMovie, tScrapeItem.ScrapeModifiers, Args.ScrapeType, Args.ScrapeOptions, Args.ScrapeList.Count = 1)
-                If ShouldSkipMovieScrapeItem(DBScrapeMovie, tScrapeItem.ScrapeModifiers, scrapeCancelled) Then
+                Dim hadScraperResults As Boolean = False
+                Dim scrapeCancelled As Boolean = ModulesManager.Instance.ScrapeData_Movie(DBScrapeMovie, tScrapeItem.ScrapeModifiers, Args.ScrapeType, Args.ScrapeOptions, Args.ScrapeList.Count = 1, hadScraperResults)
+                If ModulesManager.ShouldSkipMovieScrapeItem(hadScraperResults, scrapeCancelled, tScrapeItem.ScrapeModifiers) Then
                     logger.Trace(String.Format("[Movie Scraper] [{0}] Scraping {1}", If(scrapeCancelled, "Cancelled", "Skipped"), OldListTitle))
                     Cancelled = True
                     If scrapeCancelled AndAlso (Args.ScrapeType = Enums.ScrapeType.SingleAuto OrElse Args.ScrapeType = Enums.ScrapeType.SingleField OrElse Args.ScrapeType = Enums.ScrapeType.SingleScrape) Then
@@ -2159,8 +2160,9 @@ Public Class frmMain
                                                                          tScrapeItem.ScrapeModifiers.MainPoster Or tScrapeItem.ScrapeModifiers.MainTheme Or tScrapeItem.ScrapeModifiers.MainTrailer) Then
                     Dim tModifiers As New Structures.ScrapeModifiers With {.MainNFO = True}
                     Dim tOptions As New Structures.ScrapeOptions 'set all values to false to not override any field. ID's are always determined.
-                    Dim scrapeCancelled As Boolean = ModulesManager.Instance.ScrapeData_Movie(DBScrapeMovie, tModifiers, Args.ScrapeType, tOptions, Args.ScrapeList.Count = 1)
-                    If ShouldSkipMovieScrapeItem(DBScrapeMovie, tModifiers, scrapeCancelled) Then
+                    Dim hadScraperResults As Boolean = False
+                    Dim scrapeCancelled As Boolean = ModulesManager.Instance.ScrapeData_Movie(DBScrapeMovie, tModifiers, Args.ScrapeType, tOptions, Args.ScrapeList.Count = 1, hadScraperResults)
+                    If ModulesManager.ShouldSkipMovieScrapeItem(hadScraperResults, scrapeCancelled, tModifiers) Then
                         logger.Trace(String.Format("[Movie Scraper] [{0}] Scraping {1}", If(scrapeCancelled, "Cancelled", "Skipped"), OldListTitle))
                         Cancelled = True
                         If scrapeCancelled AndAlso (Args.ScrapeType = Enums.ScrapeType.SingleAuto OrElse Args.ScrapeType = Enums.ScrapeType.SingleField OrElse Args.ScrapeType = Enums.ScrapeType.SingleScrape) Then
@@ -16567,14 +16569,6 @@ Public Class frmMain
             logger.Error(ex, New StackFrame().GetMethod().Name)
         End Try
     End Sub
-
-    Private Function ShouldSkipMovieScrapeItem(ByVal DBElement As Database.DBElement,
-                                               ByVal scrapeModifiers As Structures.ScrapeModifiers,
-                                               ByVal scrapeCancelled As Boolean) As Boolean
-        If scrapeCancelled Then Return True
-        If scrapeModifiers.MainNFO AndAlso Not DBElement.Movie.IMDBSpecified AndAlso Not DBElement.Movie.TMDBSpecified Then Return True
-        Return False
-    End Function
 
     Private Function IsBatchScrapeType(ByVal scrapeType As Enums.ScrapeType) As Boolean
         Select Case scrapeType

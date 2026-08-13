@@ -121,6 +121,9 @@
     <Compile Include="Test_clsAPIImages.vb" />
     <Compile Include="Test_clsAPIImageUtils.vb" />
     <Compile Include="Test_clsAPINumUtils.vb" />
+    <Compile Include="Test_ScrapeDecision.vb" />
+    <Compile Include="Test_ScrapeData_Movie.vb" />
+    <Compile Include="Test_SetPreferredImages.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>

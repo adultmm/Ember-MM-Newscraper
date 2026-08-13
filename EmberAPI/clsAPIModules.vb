@@ -906,7 +906,8 @@ Public Class ModulesManager
     ''' <param name="ScrapeOptions">What kind of data is being requested from the scrape</param>
     ''' <returns><c>True</c> if one of the scrapers was cancelled</returns>
     ''' <remarks>Note that if no movie scrapers are enabled, a silent warning is generated.</remarks>
-    Public Function ScrapeData_Movie(ByRef DBElement As Database.DBElement, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByVal ScrapeType As Enums.ScrapeType, ByVal ScrapeOptions As Structures.ScrapeOptions, ByVal showMessage As Boolean) As Boolean
+    Public Function ScrapeData_Movie(ByRef DBElement As Database.DBElement, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByVal ScrapeType As Enums.ScrapeType, ByVal ScrapeOptions As Structures.ScrapeOptions, ByVal showMessage As Boolean, Optional ByRef hadScraperResults As Boolean = False) As Boolean
+        hadScraperResults = False
         logger.Trace(String.Format("[ModulesManager] [ScrapeData_Movie] [Start] {0}", DBElement.Filename))
         If DBElement.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(DBElement, showMessage) Then
             Dim modules As IEnumerable(Of _externalScraperModuleClass_Data_Movie) = externalScrapersModules_Data_Movie.Where(Function(e) e.ProcessorModule.ScraperEnabled).OrderBy(Function(e) e.ModuleOrder)
@@ -939,7 +940,10 @@ Public Class ModulesManager
 
                     ret = _externalScraperModule.ProcessorModule.Scraper_Movie(oDBMovie, ScrapeModifiers, ScrapeType, ScrapeOptions)
 
-                    If ret.Cancelled Then Return ret.Cancelled
+                    If ret.Cancelled Then
+                        hadScraperResults = ScrapedList.Count > 0
+                        Return ret.Cancelled
+                    End If
 
                     If ret.Result IsNot Nothing Then
                         ScrapedList.Add(ret.Result)
@@ -972,7 +976,8 @@ Public Class ModulesManager
                 DBElement.Movie.CreateCachePaths_ActorsThumbs()
             End If
 
-            If ScrapedList.Count > 0 Then
+            hadScraperResults = ScrapedList.Count > 0
+            If hadScraperResults Then
                 logger.Trace(String.Format("[ModulesManager] [ScrapeData_Movie] [Done] {0}", DBElement.Filename))
             Else
                 logger.Trace(String.Format("[ModulesManager] [ScrapeData_Movie] [Done] [No Scraper Results] {0}", DBElement.Filename))
@@ -984,6 +989,18 @@ Public Class ModulesManager
             Return True 'Cancelled
         End If
     End Function
+
+    ''' <summary>
+    ''' Whether to skip save/images/trailer steps for the current movie scrape item.
+    ''' </summary>
+    Public Shared Function ShouldSkipMovieScrapeItem(ByVal hadScraperResults As Boolean,
+                                                     ByVal scrapeCancelled As Boolean,
+                                                     ByVal scrapeModifiers As Structures.ScrapeModifiers) As Boolean
+        If scrapeCancelled Then Return True
+        If scrapeModifiers.MainNFO AndAlso Not hadScraperResults Then Return True
+        Return False
+    End Function
+
     ''' <summary>
     ''' Request that enabled movie scrapers perform their functions on the supplied movie
     ''' </summary>
@@ -2253,7 +2270,7 @@ Public Class ModulesManager
 
     End Class
 
-    Class _externalScraperModuleClass_Data_Movie
+    Public Class _externalScraperModuleClass_Data_Movie
 
 #Region "Fields"
 
@@ -2267,7 +2284,7 @@ Public Class ModulesManager
 
     End Class
 
-    Class _externalScraperModuleClass_Data_MovieSet
+    Public Class _externalScraperModuleClass_Data_MovieSet
 
 #Region "Fields"
 
