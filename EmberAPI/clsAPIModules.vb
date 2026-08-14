@@ -1002,6 +1002,22 @@ Public Class ModulesManager
     End Function
 
     ''' <summary>
+    ''' True when the run behaves like a single interactive scrape: an item-level
+    ''' cancel aborts the run, and batch info panel following is disabled.
+    ''' </summary>
+    Public Shared Function IsSingleItemScrapeRun(ByVal scrapeType As Enums.ScrapeType,
+                                                 ByVal scrapeListCount As Integer) As Boolean
+        Select Case scrapeType
+            Case Enums.ScrapeType.SingleScrape
+                Return True
+            Case Enums.ScrapeType.SingleAuto, Enums.ScrapeType.SingleField
+                Return scrapeListCount <= 1
+            Case Else
+                Return False
+        End Select
+    End Function
+
+    ''' <summary>
     ''' Request that enabled movie scrapers perform their functions on the supplied movie
     ''' </summary>
     ''' <param name="DBElement">MovieSet to be scraped. Scraper will directly manipulate this structure</param>
