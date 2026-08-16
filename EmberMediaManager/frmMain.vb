@@ -2133,7 +2133,7 @@ Public Class frmMain
 
             If bwMovieScraper.CancellationPending Then Exit For
             OldListTitle = tScrapeItem.DataRow.Item("ListTitle").ToString
-            ReportBatchScrapeFollowProgress(bwMovieScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idMovie")))
+            ReportBatchScrapeFollowProgress(bwMovieScraper, Args.ScrapeType, Args.ScrapeList.Count, Convert.ToInt64(tScrapeItem.DataRow.Item("idMovie")))
             bwMovieScraper.ReportProgress(1, OldListTitle)
 
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
@@ -2146,9 +2146,10 @@ Public Class frmMain
                 Dim hadScraperResults As Boolean = False
                 Dim scrapeCancelled As Boolean = ModulesManager.Instance.ScrapeData_Movie(DBScrapeMovie, tScrapeItem.ScrapeModifiers, Args.ScrapeType, Args.ScrapeOptions, Args.ScrapeList.Count = 1, hadScraperResults)
                 If ModulesManager.ShouldSkipMovieScrapeItem(hadScraperResults, scrapeCancelled, tScrapeItem.ScrapeModifiers) Then
-                    logger.Trace(String.Format("[Movie Scraper] [{0}] Scraping {1}", If(scrapeCancelled, "Cancelled", "Skipped"), OldListTitle))
+                    Dim skipReason As String = If(Not DBScrapeMovie.IsOnline, "Offline", If(scrapeCancelled, "Cancelled", "No Results"))
+                    logger.Trace(String.Format("[Movie Scraper] [Skipped] [{0}] {1}", skipReason, OldListTitle))
                     Cancelled = True
-                    If scrapeCancelled AndAlso (Args.ScrapeType = Enums.ScrapeType.SingleAuto OrElse Args.ScrapeType = Enums.ScrapeType.SingleField OrElse Args.ScrapeType = Enums.ScrapeType.SingleScrape) Then
+                    If scrapeCancelled AndAlso ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
                         bwMovieScraper.CancelAsync()
                     End If
                 End If
@@ -2163,9 +2164,10 @@ Public Class frmMain
                     Dim hadScraperResults As Boolean = False
                     Dim scrapeCancelled As Boolean = ModulesManager.Instance.ScrapeData_Movie(DBScrapeMovie, tModifiers, Args.ScrapeType, tOptions, Args.ScrapeList.Count = 1, hadScraperResults)
                     If ModulesManager.ShouldSkipMovieScrapeItem(hadScraperResults, scrapeCancelled, tModifiers) Then
-                        logger.Trace(String.Format("[Movie Scraper] [{0}] Scraping {1}", If(scrapeCancelled, "Cancelled", "Skipped"), OldListTitle))
+                        Dim skipReason As String = If(Not DBScrapeMovie.IsOnline, "Offline", If(scrapeCancelled, "Cancelled", "No Results"))
+                        logger.Trace(String.Format("[Movie Scraper] [Skipped] [{0}] {1}", skipReason, OldListTitle))
                         Cancelled = True
-                        If scrapeCancelled AndAlso (Args.ScrapeType = Enums.ScrapeType.SingleAuto OrElse Args.ScrapeType = Enums.ScrapeType.SingleField OrElse Args.ScrapeType = Enums.ScrapeType.SingleScrape) Then
+                        If scrapeCancelled AndAlso ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
                             bwMovieScraper.CancelAsync()
                         End If
                     End If
@@ -2272,8 +2274,6 @@ Public Class frmMain
                     bwMovieScraper.ReportProgress(-1, If(Not OldListTitle = NewListTitle, String.Format(Master.eLang.GetString(812, "Old Title: {0} | New Title: {1}"), OldListTitle, NewListTitle), NewListTitle))
                 End If
                 logger.Trace(String.Format("[Movie Scraper] [Done] Scraping {0}", OldListTitle))
-            Else
-                logger.Trace(String.Format("[Movie Scraper] [Cancelled] Scraping {0}", OldListTitle))
             End If
         Next
 
@@ -2352,7 +2352,7 @@ Public Class frmMain
             OldListTitle = tScrapeItem.DataRow.Item("ListTitle").ToString
             OldTitle = tScrapeItem.DataRow.Item("SetName").ToString
             OldTMDBColID = tScrapeItem.DataRow.Item("TMDBColID").ToString
-            ReportBatchScrapeFollowProgress(bwMovieSetScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idSet")))
+            ReportBatchScrapeFollowProgress(bwMovieSetScraper, Args.ScrapeType, Args.ScrapeList.Count, Convert.ToInt64(tScrapeItem.DataRow.Item("idSet")))
             bwMovieSetScraper.ReportProgress(1, OldListTitle)
 
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
@@ -2368,7 +2368,7 @@ Public Class frmMain
                 If ModulesManager.Instance.ScrapeData_MovieSet(DBScrapeMovieSet, tScrapeItem.ScrapeModifiers, Args.ScrapeType, Args.ScrapeOptions, Args.ScrapeList.Count = 1) Then
                     logger.Trace(String.Format("[MovieSet Scraper] [Cancelled] Scraping {0}", OldListTitle))
                     Cancelled = True
-                    If Args.ScrapeType = Enums.ScrapeType.SingleAuto OrElse Args.ScrapeType = Enums.ScrapeType.SingleField OrElse Args.ScrapeType = Enums.ScrapeType.SingleScrape Then
+                    If ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
                         bwMovieSetScraper.CancelAsync()
                     End If
                 End If
@@ -2381,7 +2381,10 @@ Public Class frmMain
                     Dim tOpt As New Structures.ScrapeOptions 'all false value not to override any field
                     If ModulesManager.Instance.ScrapeData_MovieSet(DBScrapeMovieSet, tScrapeItem.ScrapeModifiers, Args.ScrapeType, tOpt, Args.ScrapeList.Count = 1) Then
                         logger.Trace(String.Format("[MovieSet Scraper] [Cancelled] Scraping {0}", OldListTitle))
-                        Exit For
+                        Cancelled = True
+                        If ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
+                            bwMovieSetScraper.CancelAsync()
+                        End If
                     End If
                 End If
             End If
@@ -2505,7 +2508,7 @@ Public Class frmMain
 
             If bwTVScraper.CancellationPending Then Exit For
             OldListTitle = tScrapeItem.DataRow.Item("ListTitle").ToString
-            ReportBatchScrapeFollowProgress(bwTVScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idShow")))
+            ReportBatchScrapeFollowProgress(bwTVScraper, Args.ScrapeType, Args.ScrapeList.Count, Convert.ToInt64(tScrapeItem.DataRow.Item("idShow")))
             bwTVScraper.ReportProgress(1, OldListTitle)
 
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
@@ -2519,7 +2522,7 @@ Public Class frmMain
                 bwTVScraper.ReportProgress(-3, String.Concat(Master.eLang.GetString(253, "Scraping Data"), ":"))
                 If ModulesManager.Instance.ScrapeData_TVShow(DBScrapeShow, tScrapeItem.ScrapeModifiers, Args.ScrapeType, Args.ScrapeOptions, Args.ScrapeList.Count = 1) Then
                     Cancelled = True
-                    If Args.ScrapeType = Enums.ScrapeType.SingleAuto OrElse Args.ScrapeType = Enums.ScrapeType.SingleField OrElse Args.ScrapeType = Enums.ScrapeType.SingleScrape Then
+                    If ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
                         logger.Trace(String.Concat("Canceled scraping: ", OldListTitle))
                         bwTVScraper.CancelAsync()
                     End If
@@ -2532,7 +2535,11 @@ Public Class frmMain
                                                                            tScrapeItem.ScrapeModifiers.MainTheme) Then
                     Dim tOpt As New Structures.ScrapeOptions 'all false value not to override any field
                     If ModulesManager.Instance.ScrapeData_TVShow(DBScrapeShow, tScrapeItem.ScrapeModifiers, Args.ScrapeType, tOpt, Args.ScrapeList.Count = 1) Then
-                        Exit For
+                        Cancelled = True
+                        If ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
+                            logger.Trace(String.Concat("Canceled scraping: ", OldListTitle))
+                            bwTVScraper.CancelAsync()
+                        End If
                     End If
                 End If
             End If
@@ -2673,7 +2680,7 @@ Public Class frmMain
 
             If bwTVEpisodeScraper.CancellationPending Then Exit For
             OldEpisodeTitle = tScrapeItem.DataRow.Item("Title").ToString
-            ReportBatchScrapeFollowProgress(bwTVEpisodeScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idEpisode")))
+            ReportBatchScrapeFollowProgress(bwTVEpisodeScraper, Args.ScrapeType, Args.ScrapeList.Count, Convert.ToInt64(tScrapeItem.DataRow.Item("idEpisode")))
             bwTVEpisodeScraper.ReportProgress(1, OldEpisodeTitle)
 
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
@@ -2687,7 +2694,7 @@ Public Class frmMain
                 bwTVEpisodeScraper.ReportProgress(-3, String.Concat(Master.eLang.GetString(253, "Scraping Data"), ":"))
                 If ModulesManager.Instance.ScrapeData_TVEpisode(DBScrapeEpisode, Args.ScrapeOptions, Args.ScrapeList.Count = 1) Then
                     Cancelled = True
-                    If Args.ScrapeType = Enums.ScrapeType.SingleAuto OrElse Args.ScrapeType = Enums.ScrapeType.SingleField OrElse Args.ScrapeType = Enums.ScrapeType.SingleScrape Then
+                    If ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
                         logger.Trace(String.Concat("Canceled scraping: ", OldEpisodeTitle))
                         bwTVEpisodeScraper.CancelAsync()
                     End If
@@ -2700,7 +2707,11 @@ Public Class frmMain
                                                                          tScrapeItem.ScrapeModifiers.MainTheme) Then
                     Dim tOpt As New Structures.ScrapeOptions 'all false value not to override any field
                     If ModulesManager.Instance.ScrapeData_TVEpisode(DBScrapeEpisode, tOpt, Args.ScrapeList.Count = 1) Then
-                        Exit For
+                        Cancelled = True
+                        If ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
+                            logger.Trace(String.Concat("Canceled scraping: ", OldEpisodeTitle))
+                            bwTVEpisodeScraper.CancelAsync()
+                        End If
                     End If
                 End If
             End If
@@ -2819,7 +2830,7 @@ Public Class frmMain
             Dim dScrapeRow As DataRow = tScrapeItem.DataRow
 
             DBScrapeSeason = Master.DB.Load_TVSeason(Convert.ToInt64(tScrapeItem.DataRow.Item("idSeason")), True, False)
-            ReportBatchScrapeFollowProgress(bwTVSeasonScraper, Args.ScrapeType, Convert.ToInt64(tScrapeItem.DataRow.Item("idSeason")))
+            ReportBatchScrapeFollowProgress(bwTVSeasonScraper, Args.ScrapeType, Args.ScrapeList.Count, Convert.ToInt64(tScrapeItem.DataRow.Item("idSeason")))
             'ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.BeforeEdit_Movie, Nothing, DBScrapeMovie)
 
             logger.Trace(String.Format("Start scraping: {0}: Season {1}", DBScrapeSeason.TVShow.Title, DBScrapeSeason.TVSeason.Season))
@@ -2828,7 +2839,7 @@ Public Class frmMain
                 bwTVSeasonScraper.ReportProgress(-3, String.Concat(Master.eLang.GetString(253, "Scraping Data"), ":"))
                 If ModulesManager.Instance.ScrapeData_TVSeason(DBScrapeSeason, Args.ScrapeOptions, Args.ScrapeList.Count = 1) Then
                     Cancelled = True
-                    If Args.ScrapeType = Enums.ScrapeType.SingleAuto OrElse Args.ScrapeType = Enums.ScrapeType.SingleField OrElse Args.ScrapeType = Enums.ScrapeType.SingleScrape Then
+                    If ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
                         logger.Trace(String.Format("Canceled scraping: {0}: Season {1}", DBScrapeSeason.TVShow.Title, DBScrapeSeason.TVSeason.Season))
                         bwTVSeasonScraper.CancelAsync()
                     End If
@@ -2839,7 +2850,11 @@ Public Class frmMain
                                                                                tScrapeItem.ScrapeModifiers.SeasonLandscape Or tScrapeItem.ScrapeModifiers.SeasonPoster) Then
                     Dim tOpt As New Structures.ScrapeOptions 'all false value not to override any field
                     If ModulesManager.Instance.ScrapeData_TVSeason(DBScrapeSeason, tOpt, Args.ScrapeList.Count = 1) Then
-                        Exit For
+                        Cancelled = True
+                        If ModulesManager.IsSingleItemScrapeRun(Args.ScrapeType, Args.ScrapeList.Count) Then
+                            logger.Trace(String.Format("Canceled scraping: {0}: Season {1}", DBScrapeSeason.TVShow.Title, DBScrapeSeason.TVSeason.Season))
+                            bwTVSeasonScraper.CancelAsync()
+                        End If
                     End If
                 End If
             End If
@@ -16570,22 +16585,17 @@ Public Class frmMain
         End Try
     End Sub
 
-    Private Function IsBatchScrapeType(ByVal scrapeType As Enums.ScrapeType) As Boolean
-        Select Case scrapeType
-            Case Enums.ScrapeType.SingleScrape, Enums.ScrapeType.SingleAuto, Enums.ScrapeType.SingleField
-                Return False
-            Case Else
-                Return True
-        End Select
-    End Function
-
     Private Function AnyBatchScraperBusy() As Boolean
         Return bwMovieScraper.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwTVScraper.IsBusy OrElse
             bwTVEpisodeScraper.IsBusy OrElse bwTVSeasonScraper.IsBusy
     End Function
 
-    Private Sub ReportBatchScrapeFollowProgress(ByVal worker As ComponentModel.BackgroundWorker, ByVal scrapeType As Enums.ScrapeType, ByVal itemId As Long)
-        If Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso IsBatchScrapeType(scrapeType) Then
+    Private Sub ReportBatchScrapeFollowProgress(ByVal worker As ComponentModel.BackgroundWorker,
+                                                ByVal scrapeType As Enums.ScrapeType,
+                                                ByVal scrapeListCount As Integer,
+                                                ByVal itemId As Long)
+        If Master.eSettings.GeneralBatchScrapeFollowInfoPanel AndAlso
+           Not ModulesManager.IsSingleItemScrapeRun(scrapeType, scrapeListCount) Then
             worker.ReportProgress(-4, itemId)
         End If
     End Sub
