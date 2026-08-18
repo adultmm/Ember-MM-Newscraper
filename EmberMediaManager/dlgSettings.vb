@@ -2949,6 +2949,9 @@ Public Class dlgSettings
             txtGeneralImageFilterPosterMatchRate.Enabled = .GeneralImageFilterPoster
             chkGeneralDoubleClickScrape.Checked = .GeneralDoubleClickScrape
             chkGeneralBatchScrapeFollowInfoPanel.Checked = .GeneralBatchScrapeFollowInfoPanel
+            chkGeneralDialogsStayOnAppDesktop.Checked = .GeneralDialogsStayOnAppDesktop
+            chkGeneralDialogsDoNotSwitchDesktop.Checked = .GeneralDialogsDoNotSwitchDesktop
+            chkGeneralDialogsDoNotSwitchDesktop.Enabled = chkGeneralDialogsStayOnAppDesktop.Checked
             chkGeneralDisplayBanner.Checked = .GeneralDisplayBanner
             chkGeneralDisplayCharacterArt.Checked = .GeneralDisplayCharacterArt
             chkGeneralDisplayClearArt.Checked = .GeneralDisplayClearArt
@@ -4990,6 +4993,8 @@ Public Class dlgSettings
             .GeneralDateTime = CType(cbGeneralDateTime.SelectedItem, KeyValuePair(Of String, Enums.DateTime)).Value
             .GeneralDoubleClickScrape = chkGeneralDoubleClickScrape.Checked
             .GeneralBatchScrapeFollowInfoPanel = chkGeneralBatchScrapeFollowInfoPanel.Checked
+            .GeneralDialogsStayOnAppDesktop = chkGeneralDialogsStayOnAppDesktop.Checked
+            .GeneralDialogsDoNotSwitchDesktop = chkGeneralDialogsStayOnAppDesktop.Checked AndAlso chkGeneralDialogsDoNotSwitchDesktop.Checked
             .GeneralDaemonDrive = cbGeneralDaemonDrive.Text
             .GeneralDaemonPath = txtGeneralDaemonPath.Text
             .GeneralDisplayBanner = chkGeneralDisplayBanner.Checked
@@ -6925,6 +6930,10 @@ Public Class dlgSettings
         chkGeneralDoubleClickScrape.Text = Master.eLang.GetString(1198, "Enable Image Scrape On Double Right Click")
         'FIXME: i18n
         chkGeneralBatchScrapeFollowInfoPanel.Text = Master.eLang.GetString(1361, "Follow current item in info panel during batch scrape")
+        'FIXME: i18n
+        chkGeneralDialogsStayOnAppDesktop.Text = Master.eLang.GetString(1518, "Keep scraper dialogs on the main window's virtual desktop")
+        'FIXME: i18n
+        chkGeneralDialogsDoNotSwitchDesktop.Text = Master.eLang.GetString(1519, "Do not switch to that desktop when a dialog opens")
         chkGeneralDisplayBanner.Text = Master.eLang.GetString(1146, "Display Banner")
         chkGeneralDisplayCharacterArt.Text = Master.eLang.GetString(1147, "Display CharacterArt")
         chkGeneralDisplayClearArt.Text = Master.eLang.GetString(1148, "Display ClearArt")
@@ -8046,6 +8055,10 @@ Public Class dlgSettings
         txtGeneralImageFilterFanartMatchRate.Enabled = chkGeneralImageFilterFanart.Checked
     End Sub
 
+    Private Sub chkGeneralDialogsStayOnAppDesktop_CheckedChanged(sender As Object, e As EventArgs) Handles chkGeneralDialogsStayOnAppDesktop.CheckedChanged
+        chkGeneralDialogsDoNotSwitchDesktop.Enabled = chkGeneralDialogsStayOnAppDesktop.Checked
+    End Sub
+
     Private Sub txtGeneralImageFilterMatchRate_TextChanged(sender As Object, e As EventArgs) Handles txtGeneralImageFilterPosterMatchRate.LostFocus, txtGeneralImageFilterFanartMatchRate.LostFocus
         If chkGeneralImageFilter.Checked Then
             Dim txtbox As TextBox = CType(sender, TextBox)
@@ -8202,6 +8215,8 @@ Public Class dlgSettings
         chkGeneralDisplayLangFlags.CheckedChanged,
         chkGeneralDoubleClickScrape.CheckedChanged,
         chkGeneralBatchScrapeFollowInfoPanel.CheckedChanged,
+        chkGeneralDialogsStayOnAppDesktop.CheckedChanged,
+        chkGeneralDialogsDoNotSwitchDesktop.CheckedChanged,
         chkGeneralImageFilterAutoscraper.CheckedChanged,
         chkGeneralImageFilterFanart.CheckedChanged,
         chkGeneralImageFilterImagedialog.CheckedChanged,

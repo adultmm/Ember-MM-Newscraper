@@ -225,7 +225,7 @@ Public Class dlgImgSelect
 
         SetParameters()
 
-        Return ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Private Sub dlgImgSelect_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load

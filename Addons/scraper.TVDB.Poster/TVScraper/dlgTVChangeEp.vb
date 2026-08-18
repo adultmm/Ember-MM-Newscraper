@@ -43,7 +43,7 @@ Public Class dlgTVChangeEp
     Public Overloads Function ShowDialog(ByVal tEpisodes As List(Of MediaContainers.EpisodeDetails)) As MediaContainers.EpisodeDetails
         Me._tepisodes = tEpisodes
 
-        If MyBase.ShowDialog = Windows.Forms.DialogResult.OK Then
+        If DialogPresenter.Present(Me) = Windows.Forms.DialogResult.OK Then
             Return _episode
         Else
             Return Nothing

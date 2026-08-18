@@ -89,7 +89,7 @@ Public Class dlgIMDBSearchResults_TV
 
         _IMDB.SearchTVShowAsync(sShowTitle, _scrapeModifiers, _filteredOptions)
 
-        Return ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Public Overloads Function ShowDialog(ByVal Res As SearchResults_TVShow, ByVal sShowTitle As String, ByVal sShowPath As String) As Windows.Forms.DialogResult
@@ -103,7 +103,7 @@ Public Class dlgIMDBSearchResults_TV
         txtFileName.Text = sShowPath
         SearchResultsDownloaded(Res)
 
-        Return ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Private Sub btnSearch_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSearch.Click

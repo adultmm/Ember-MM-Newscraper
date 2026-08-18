@@ -2002,6 +2002,7 @@ Public Class ModulesManager
         Private _ListMovies As String
         Private _ListTVShows As String
         Private _LoadMedia As LoadMedia
+        Private _MainForm As Form
         Private _MainMenu As MenuStrip
         Private _MainTabControl As TabControl
         Private _MainToolStrip As ToolStrip
@@ -2213,6 +2214,15 @@ Public Class ModulesManager
             End Get
             Set(ByVal value As ContextMenuStrip)
                 _ContextMenuTVShowList = value
+            End Set
+        End Property
+
+        Public Property MainForm() As Form
+            Get
+                Return _MainForm
+            End Get
+            Set(ByVal value As Form)
+                _MainForm = value
             End Set
         End Property
 

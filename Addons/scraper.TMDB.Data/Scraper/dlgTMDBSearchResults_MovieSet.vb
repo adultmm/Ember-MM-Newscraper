@@ -82,7 +82,7 @@ Public Class dlgTMDBSearchResults_MovieSet
         chkManual.Enabled = False
         _TMDB.SearchAsync_MovieSet(sMovieSetTitle, _filterOptions)
 
-        Return ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Public Overloads Function ShowDialog(Res As SearchResults_MovieSet, ByVal sMovieSetTitle As String) As DialogResult
@@ -96,7 +96,7 @@ Public Class dlgTMDBSearchResults_MovieSet
         txtFileName.Text = String.Empty
         SearchResultsDownloaded_MovieSet(Res)
 
-        Return ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Private Sub btnSearch_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnSearch.Click

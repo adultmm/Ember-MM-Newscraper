@@ -84,7 +84,7 @@ Public Class dlgEditMovie
 
     Public Overloads Function ShowDialog(ByVal DBMovie As Database.DBElement) As DialogResult
         tmpDBElement = DBMovie
-        Return ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Private Sub ActorEdit()

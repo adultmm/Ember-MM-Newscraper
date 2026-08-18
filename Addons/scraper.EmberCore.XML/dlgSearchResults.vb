@@ -58,7 +58,7 @@ Public Class dlgSearchResults
         Me._scrapername = scrapername
         SearchResultsDownloaded()
 
-        If MyBase.ShowDialog = Windows.Forms.DialogResult.OK Then
+        If DialogPresenter.Present(Me) = Windows.Forms.DialogResult.OK Then
             Return lMediaTag
         Else
             Return Nothing

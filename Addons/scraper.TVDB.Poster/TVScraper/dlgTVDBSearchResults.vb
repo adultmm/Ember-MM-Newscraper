@@ -52,7 +52,7 @@ Public Class dlgTVDBSearchResults
         Me.txtSearch.Text = sInfo.ShowTitle
         Scraper.sObject.GetSearchResultsAsync(Me.sInfo)
 
-        Return MyBase.ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Public Overloads Function ShowDialog(ByVal _sinfo As Structures.ScrapeInfo, ByVal SkipDownload As Boolean) As Structures.ScrapeInfo
@@ -63,7 +63,7 @@ Public Class dlgTVDBSearchResults
         Me.txtSearch.Text = sInfo.ShowTitle
         Scraper.sObject.GetSearchResultsAsync(Me.sInfo)
 
-        If MyBase.ShowDialog() = Windows.Forms.DialogResult.OK Then
+        If DialogPresenter.Present(Me) = Windows.Forms.DialogResult.OK Then
             Return Me.sInfo
         Else
             Return _sinfo

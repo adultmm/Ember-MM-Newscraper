@@ -78,13 +78,13 @@ Public Class dlgImgSelect
         isEdit = _isEdit
         isShown = True
 
-        MyBase.ShowDialog()
+        DialogPresenter.Present(Me)
         Return Results
     End Function
 
     Public Overloads Function ShowDialog() As Containers.ImgResult
         isShown = True
-        MyBase.ShowDialog()
+        DialogPresenter.Present(Me)
 
         Return Results
     End Function

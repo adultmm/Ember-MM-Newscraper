@@ -390,7 +390,7 @@ Public Class dlgTVImageSelect
         Me._type = Type
         Me._withcurrent = WithCurrent
         Me._ScrapeType = ScrapeType
-        Return MyBase.ShowDialog
+        Return DialogPresenter.Present(Me)
     End Function
 
     Public Overloads Function ShowDialog(ByVal ShowID As Integer, ByVal Type As Enums.ImageType_TV, ByVal Season As Integer, ByVal CurrentImage As Images) As Images
@@ -400,7 +400,7 @@ Public Class dlgTVImageSelect
         Me.pbCurrent.Image = CurrentImage.Image
         Me.pbCurrent.Tag = CurrentImage
 
-        If MyBase.ShowDialog = Windows.Forms.DialogResult.OK Then
+        If DialogPresenter.Present(Me) = Windows.Forms.DialogResult.OK Then
             Return CType(Me.pbCurrent.Tag, Images)
         Else
             Return Nothing

@@ -190,6 +190,7 @@
     <Compile Include="clsAPIFormsUtils.vb">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="clsAPIDialogPresenter.vb" />
     <Compile Include="clsAPIProfiles.vb" />
     <Compile Include="clsAPIProperties.vb" />
     <Compile Include="clsAPITaskManager.vb" />

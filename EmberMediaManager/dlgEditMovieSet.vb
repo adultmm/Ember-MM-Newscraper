@@ -68,7 +68,7 @@ Public Class dlgEditMovieSet
 
     Public Overloads Function ShowDialog(ByVal DBMovieSet As Database.DBElement) As DialogResult
         tmpDBElement = DBMovieSet
-        Return ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Private Sub btnGetTMDBColID_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnGetTMDBColID.Click

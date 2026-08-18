@@ -10782,6 +10782,7 @@ Public Class frmMain
 
         ModulesManager.Instance.RuntimeObjects.DelegateLoadMedia(AddressOf LoadMedia)
         ModulesManager.Instance.RuntimeObjects.DelegateOpenImageViewer(AddressOf OpenImageViewer)
+        ModulesManager.Instance.RuntimeObjects.MainForm = Me
         ModulesManager.Instance.RuntimeObjects.MainMenu = mnuMain
         ModulesManager.Instance.RuntimeObjects.MainTabControl = tcMain
         ModulesManager.Instance.RuntimeObjects.MainToolStrip = tsMain

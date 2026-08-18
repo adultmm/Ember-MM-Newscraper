@@ -34,7 +34,7 @@ Public Class dlgTVEpisodePoster
 
     Public Overloads Function ShowDialog(ByVal Poster As Image) As System.Windows.Forms.DialogResult
         Me.pbPoster.Image = Poster
-        Return MyBase.ShowDialog
+        Return DialogPresenter.Present(Me)
     End Function
 
     Private Sub Cancel_Button_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Cancel_Button.Click

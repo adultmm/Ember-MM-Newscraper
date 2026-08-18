@@ -2081,6 +2081,24 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property GeneralDialogsStayOnAppDesktop() As Boolean
+        Get
+            Return Settings._XMLSettings.GeneralDialogsStayOnAppDesktop
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.GeneralDialogsStayOnAppDesktop = value
+        End Set
+    End Property
+
+    Public Property GeneralDialogsDoNotSwitchDesktop() As Boolean
+        Get
+            Return Settings._XMLSettings.GeneralDialogsDoNotSwitchDesktop
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.GeneralDialogsDoNotSwitchDesktop = value
+        End Set
+    End Property
+
     Public Property TVShowThemeDefaultSearch() As String
         Get
             Return Settings._XMLSettings.TVShowThemeDefaultSearch
@@ -7096,6 +7114,8 @@ Public Class Settings
         GeneralDisplayPoster = True
         GeneralDoubleClickScrape = False
         GeneralBatchScrapeFollowInfoPanel = False
+        GeneralDialogsStayOnAppDesktop = True
+        GeneralDialogsDoNotSwitchDesktop = False
         GeneralFilterPanelIsRaisedMovie = False
         GeneralFilterPanelIsRaisedMovieSet = False
         GeneralFilterPanelIsRaisedTVShow = False

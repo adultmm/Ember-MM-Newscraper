@@ -107,7 +107,7 @@ Public Class dlgMediaFileSelect
         SetControlsEnabled(True)
         SetEnabled()
 
-        Return ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Private Sub Setup()

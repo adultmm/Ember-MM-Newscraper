@@ -234,6 +234,8 @@ Partial Class dlgSettings
         Me.chkGeneralDisplayClearArt = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDoubleClickScrape = New System.Windows.Forms.CheckBox()
         Me.chkGeneralBatchScrapeFollowInfoPanel = New System.Windows.Forms.CheckBox()
+        Me.chkGeneralDialogsStayOnAppDesktop = New System.Windows.Forms.CheckBox()
+        Me.chkGeneralDialogsDoNotSwitchDesktop = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDisplayClearLogo = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDisplayBanner = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDisplayCharacterArt = New System.Windows.Forms.CheckBox()
@@ -4699,10 +4701,12 @@ Partial Class dlgSettings
         Me.tblGeneralMainWindow.Controls.Add(Me.chkGeneralDisplayLandscape, 1, 6)
         Me.tblGeneralMainWindow.Controls.Add(Me.chkGeneralDisplayPoster, 1, 7)
         Me.tblGeneralMainWindow.Controls.Add(Me.chkGeneralBatchScrapeFollowInfoPanel, 0, 9)
+        Me.tblGeneralMainWindow.Controls.Add(Me.chkGeneralDialogsStayOnAppDesktop, 0, 10)
+        Me.tblGeneralMainWindow.Controls.Add(Me.chkGeneralDialogsDoNotSwitchDesktop, 0, 11)
         Me.tblGeneralMainWindow.Dock = System.Windows.Forms.DockStyle.Fill
         Me.tblGeneralMainWindow.Location = New System.Drawing.Point(3, 18)
         Me.tblGeneralMainWindow.Name = "tblGeneralMainWindow"
-        Me.tblGeneralMainWindow.RowCount = 11
+        Me.tblGeneralMainWindow.RowCount = 13
         Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
@@ -4714,7 +4718,9 @@ Partial Class dlgSettings
         Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.tblGeneralMainWindow.Size = New System.Drawing.Size(361, 262)
+        Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.tblGeneralMainWindow.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.tblGeneralMainWindow.Size = New System.Drawing.Size(361, 310)
         Me.tblGeneralMainWindow.TabIndex = 17
         '
         'chkGeneralDisplayDiscArt
@@ -4778,6 +4784,33 @@ Partial Class dlgSettings
         Me.chkGeneralBatchScrapeFollowInfoPanel.TabIndex = 20
         Me.chkGeneralBatchScrapeFollowInfoPanel.Text = "Follow current item in info panel during batch scrape"
         Me.chkGeneralBatchScrapeFollowInfoPanel.UseVisualStyleBackColor = True
+        '
+        'chkGeneralDialogsStayOnAppDesktop
+        '
+        Me.chkGeneralDialogsStayOnAppDesktop.Anchor = System.Windows.Forms.AnchorStyles.Left
+        Me.chkGeneralDialogsStayOnAppDesktop.AutoSize = True
+        Me.tblGeneralMainWindow.SetColumnSpan(Me.chkGeneralDialogsStayOnAppDesktop, 2)
+        Me.chkGeneralDialogsStayOnAppDesktop.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.chkGeneralDialogsStayOnAppDesktop.Location = New System.Drawing.Point(3, 254)
+        Me.chkGeneralDialogsStayOnAppDesktop.Name = "chkGeneralDialogsStayOnAppDesktop"
+        Me.chkGeneralDialogsStayOnAppDesktop.Size = New System.Drawing.Size(330, 17)
+        Me.chkGeneralDialogsStayOnAppDesktop.TabIndex = 21
+        Me.chkGeneralDialogsStayOnAppDesktop.Text = "Keep scraper dialogs on the main window's virtual desktop"
+        Me.chkGeneralDialogsStayOnAppDesktop.UseVisualStyleBackColor = True
+        '
+        'chkGeneralDialogsDoNotSwitchDesktop
+        '
+        Me.chkGeneralDialogsDoNotSwitchDesktop.Anchor = System.Windows.Forms.AnchorStyles.Left
+        Me.chkGeneralDialogsDoNotSwitchDesktop.AutoSize = True
+        Me.tblGeneralMainWindow.SetColumnSpan(Me.chkGeneralDialogsDoNotSwitchDesktop, 2)
+        Me.chkGeneralDialogsDoNotSwitchDesktop.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.chkGeneralDialogsDoNotSwitchDesktop.Location = New System.Drawing.Point(3, 277)
+        Me.chkGeneralDialogsDoNotSwitchDesktop.Name = "chkGeneralDialogsDoNotSwitchDesktop"
+        Me.chkGeneralDialogsDoNotSwitchDesktop.Padding = New System.Windows.Forms.Padding(16, 0, 0, 0)
+        Me.chkGeneralDialogsDoNotSwitchDesktop.Size = New System.Drawing.Size(330, 17)
+        Me.chkGeneralDialogsDoNotSwitchDesktop.TabIndex = 22
+        Me.chkGeneralDialogsDoNotSwitchDesktop.Text = "Do not switch to that desktop when a dialog opens"
+        Me.chkGeneralDialogsDoNotSwitchDesktop.UseVisualStyleBackColor = True
         '
         'chkGeneralDisplayClearLogo
         '
@@ -24640,6 +24673,8 @@ End Sub
     Friend WithEvents cdColor As System.Windows.Forms.ColorDialog
     Friend WithEvents chkGeneralDoubleClickScrape As System.Windows.Forms.CheckBox
     Friend WithEvents chkGeneralBatchScrapeFollowInfoPanel As System.Windows.Forms.CheckBox
+    Friend WithEvents chkGeneralDialogsStayOnAppDesktop As System.Windows.Forms.CheckBox
+    Friend WithEvents chkGeneralDialogsDoNotSwitchDesktop As System.Windows.Forms.CheckBox
     Friend WithEvents pnlMovieSetGeneral As System.Windows.Forms.Panel
     Friend WithEvents gbMovieSetGeneralMiscOpts As System.Windows.Forms.GroupBox
     Friend WithEvents chkMovieSetClickScrape As System.Windows.Forms.CheckBox

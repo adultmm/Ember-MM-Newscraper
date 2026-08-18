@@ -58,7 +58,7 @@ Public Class dlgEditTVEpisode
 
     Public Overloads Function ShowDialog(ByVal DBTVEpisode As Database.DBElement) As DialogResult
         tmpDBElement = DBTVEpisode
-        Return ShowDialog()
+        Return DialogPresenter.Present(Me)
     End Function
 
     Private Sub ActorEdit()

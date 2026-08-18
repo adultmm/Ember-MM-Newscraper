@@ -42,7 +42,7 @@ Public Class dlgTrailer
 
         Me.lbTrailers.Items.AddRange(_trailerlist.ToArray)
 
-        If MyBase.ShowDialog() = System.Windows.Forms.DialogResult.OK Then
+        If DialogPresenter.Present(Me) = System.Windows.Forms.DialogResult.OK Then
             Return Me.tURL
         Else
             Return String.Empty
