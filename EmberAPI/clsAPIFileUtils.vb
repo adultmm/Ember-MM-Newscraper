@@ -558,6 +558,7 @@ Namespace FileUtils
 
         Public Shared Function CheckOnlineStatus_Movie(ByRef dbMovie As Database.DBElement, ByVal showMessage As Boolean) As Boolean
             While Not File.Exists(dbMovie.Filename)
+                If ScrapeCancellation.IsRequested Then Return False
                 If showMessage Then
                     If MessageBox.Show(String.Concat(Master.eLang.GetString(587, "This file is no longer available"), ".", Environment.NewLine,
                                                      Master.eLang.GetString(630, "Reconnect the source and press Retry"), ".",
@@ -574,6 +575,7 @@ Namespace FileUtils
 
         Public Shared Function CheckOnlineStatus_TVEpisode(ByRef dbTV As Database.DBElement, ByVal showMessage As Boolean) As Boolean
             While Not File.Exists(dbTV.Filename)
+                If ScrapeCancellation.IsRequested Then Return False
                 If showMessage Then
                     If MessageBox.Show(String.Concat(Master.eLang.GetString(587, "This file is no longer available"), ".", Environment.NewLine,
                                                      Master.eLang.GetString(630, "Reconnect the source and press Retry"), ".",
@@ -590,6 +592,7 @@ Namespace FileUtils
 
         Public Shared Function CheckOnlineStatus_TVShow(ByRef dbTV As Database.DBElement, ByVal showMessage As Boolean) As Boolean
             While Not Directory.Exists(dbTV.ShowPath)
+                If ScrapeCancellation.IsRequested Then Return False
                 If showMessage Then
                     If MessageBox.Show(String.Concat(Master.eLang.GetString(719, "This path is no longer available"), ".", Environment.NewLine,
                                                      Master.eLang.GetString(630, "Reconnect the source and press Retry"), ".",

@@ -110,9 +110,17 @@ Public Class Scraper
 
     Friend WithEvents bwTMDB As New ComponentModel.BackgroundWorker
 
+    Private _userCancelledSearch As Boolean
+
 #End Region 'Fields
 
 #Region "Properties"
+
+    Public ReadOnly Property UserCancelledSearch As Boolean
+        Get
+            Return _userCancelledSearch
+        End Get
+    End Property
 
     Public Property DefaultLanguage As String
         Get
@@ -1144,6 +1152,7 @@ Public Class Scraper
     End Function
 
     Public Function GetSearchMovieInfo(ByVal strMovieName As String, ByRef oDBMovie As Database.DBElement, ByVal eType As Enums.ScrapeType, ByVal FilteredOptions As Structures.ScrapeOptions) As MediaContainers.Movie
+        _userCancelledSearch = False
         Dim r As SearchResults_Movie = SearchMovie(strMovieName, CInt(If(Not String.IsNullOrEmpty(oDBMovie.Movie.Year), oDBMovie.Movie.Year, Nothing)))
 
         Select Case eType
@@ -1152,10 +1161,13 @@ Public Class Scraper
                     Return GetInfo_Movie(r.Matches.Item(0).TMDB, FilteredOptions, False)
                 Else
                     Using dlgSearch As New dlgTMDBSearchResults_Movie(_addonSettings, Me)
-                        If dlgSearch.ShowDialog(r, strMovieName, oDBMovie.Filename) = DialogResult.OK Then
+                        Dim dlgResult As DialogResult = dlgSearch.ShowDialog(r, strMovieName, oDBMovie.Filename)
+                        If dlgResult = DialogResult.OK Then
                             If Not String.IsNullOrEmpty(dlgSearch.Result.TMDB) Then
                                 Return GetInfo_Movie(dlgSearch.Result.TMDB, FilteredOptions, False)
                             End If
+                        ElseIf dlgResult = DialogResult.Cancel OrElse dlgResult = DialogResult.Abort Then
+                            _userCancelledSearch = True
                         End If
                     End Using
                 End If
@@ -1175,6 +1187,7 @@ Public Class Scraper
     End Function
 
     Public Function GetSearchMovieSetInfo(ByVal strMovieSetName As String, ByRef oDBMovieSet As Database.DBElement, ByVal eType As Enums.ScrapeType, ByVal FilteredOptions As Structures.ScrapeOptions) As MediaContainers.MovieSet
+        _userCancelledSearch = False
         Dim r As SearchResults_MovieSet = SearchMovieSet(strMovieSetName)
 
         Select Case eType
@@ -1183,10 +1196,13 @@ Public Class Scraper
                     Return GetInfo_Movieset(r.Matches.Item(0).TMDB, FilteredOptions, False)
                 Else
                     Using dlgSearch As New dlgTMDBSearchResults_MovieSet(_addonSettings, Me)
-                        If dlgSearch.ShowDialog(r, strMovieSetName) = DialogResult.OK Then
+                        Dim dlgResult As DialogResult = dlgSearch.ShowDialog(r, strMovieSetName)
+                        If dlgResult = DialogResult.OK Then
                             If Not String.IsNullOrEmpty(dlgSearch.Result.TMDB) Then
                                 Return GetInfo_Movieset(dlgSearch.Result.TMDB, FilteredOptions, False)
                             End If
+                        ElseIf dlgResult = DialogResult.Cancel OrElse dlgResult = DialogResult.Abort Then
+                            _userCancelledSearch = True
                         End If
                     End Using
                 End If
@@ -1206,6 +1222,7 @@ Public Class Scraper
     End Function
 
     Public Function GetSearchTVShowInfo(ByVal strShowName As String, ByRef oDBTV As Database.DBElement, ByVal eType As Enums.ScrapeType, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.TVShow
+        _userCancelledSearch = False
         Dim r As SearchResults_TVShow = SearchTVShow(strShowName)
 
         Select Case eType
@@ -1214,10 +1231,13 @@ Public Class Scraper
                     Return GetInfo_TVShow(r.Matches.Item(0).TMDB, ScrapeModifiers, FilteredOptions, False)
                 Else
                     Using dlgSearch As New dlgTMDBSearchResults_TV(_addonSettings, Me)
-                        If dlgSearch.ShowDialog(r, strShowName, oDBTV.ShowPath) = DialogResult.OK Then
+                        Dim dlgResult As DialogResult = dlgSearch.ShowDialog(r, strShowName, oDBTV.ShowPath)
+                        If dlgResult = DialogResult.OK Then
                             If Not String.IsNullOrEmpty(dlgSearch.Result.TMDB) Then
                                 Return GetInfo_TVShow(dlgSearch.Result.TMDB, ScrapeModifiers, FilteredOptions, False)
                             End If
+                        ElseIf dlgResult = DialogResult.Cancel OrElse dlgResult = DialogResult.Abort Then
+                            _userCancelledSearch = True
                         End If
                     End Using
                 End If

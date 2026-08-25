@@ -937,36 +937,38 @@ Public Class ModulesManager
                 For Each _externalScraperModule As _externalScraperModuleClass_Data_Movie In modules
                     logger.Trace(String.Format("[ModulesManager] [ScrapeData_Movie] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                     AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                    Try
+                        ret = _externalScraperModule.ProcessorModule.Scraper_Movie(oDBMovie, ScrapeModifiers, ScrapeType, ScrapeOptions)
 
-                    ret = _externalScraperModule.ProcessorModule.Scraper_Movie(oDBMovie, ScrapeModifiers, ScrapeType, ScrapeOptions)
+                        If ret.Cancelled Then
+                            hadScraperResults = ScrapedList.Count > 0
+                            Return ret.Cancelled
+                        End If
 
-                    If ret.Cancelled Then
-                        hadScraperResults = ScrapedList.Count > 0
-                        Return ret.Cancelled
-                    End If
+                        If ret.Result IsNot Nothing Then
+                            ScrapedList.Add(ret.Result)
 
-                    If ret.Result IsNot Nothing Then
-                        ScrapedList.Add(ret.Result)
-
-                        'set new informations for following scrapers
-                        If ret.Result.IMDBSpecified Then
-                            oDBMovie.Movie.IMDB = ret.Result.IMDB
+                            'set new informations for following scrapers
+                            If ret.Result.IMDBSpecified Then
+                                oDBMovie.Movie.IMDB = ret.Result.IMDB
+                            End If
+                            If ret.Result.OriginalTitleSpecified Then
+                                oDBMovie.Movie.OriginalTitle = ret.Result.OriginalTitle
+                            End If
+                            If ret.Result.TitleSpecified Then
+                                oDBMovie.Movie.Title = ret.Result.Title
+                            End If
+                            If ret.Result.TMDBSpecified Then
+                                oDBMovie.Movie.TMDB = ret.Result.TMDB
+                            End If
+                            If ret.Result.YearSpecified Then
+                                oDBMovie.Movie.Year = ret.Result.Year
+                            End If
                         End If
-                        If ret.Result.OriginalTitleSpecified Then
-                            oDBMovie.Movie.OriginalTitle = ret.Result.OriginalTitle
-                        End If
-                        If ret.Result.TitleSpecified Then
-                            oDBMovie.Movie.Title = ret.Result.Title
-                        End If
-                        If ret.Result.TMDBSpecified Then
-                            oDBMovie.Movie.TMDB = ret.Result.TMDB
-                        End If
-                        If ret.Result.YearSpecified Then
-                            oDBMovie.Movie.Year = ret.Result.Year
-                        End If
-                    End If
-                    RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
-                    If ret.breakChain Then Exit For
+                        If ret.breakChain Then Exit For
+                    Finally
+                        RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                    End Try
                 Next
 
                 'Merge scraperresults considering global datascraper settings
@@ -1055,27 +1057,29 @@ Public Class ModulesManager
             For Each _externalScraperModule As _externalScraperModuleClass_Data_MovieSet In modules
                 logger.Trace(String.Format("[ModulesManager] [ScrapeData_MovieSet] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                 AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_MovieSet
+                Try
+                    ret = _externalScraperModule.ProcessorModule.Scraper(oDBMovieSet, ScrapeModifiers, ScrapeType, ScrapeOptions)
 
-                ret = _externalScraperModule.ProcessorModule.Scraper(oDBMovieSet, ScrapeModifiers, ScrapeType, ScrapeOptions)
-
-                If ret.Cancelled Then
-                    logger.Trace(String.Format("[ModulesManager] [ScrapeData_MovieSet] [Cancelled] [No Scraper Results] {0}", DBElement.MovieSet.Title))
-                    Return ret.Cancelled
-                End If
-
-                If ret.Result IsNot Nothing Then
-                    ScrapedList.Add(ret.Result)
-
-                    'set new informations for following scrapers
-                    If ret.Result.TitleSpecified Then
-                        oDBMovieSet.MovieSet.Title = ret.Result.Title
+                    If ret.Cancelled Then
+                        logger.Trace(String.Format("[ModulesManager] [ScrapeData_MovieSet] [Cancelled] [No Scraper Results] {0}", DBElement.MovieSet.Title))
+                        Return ret.Cancelled
                     End If
-                    If ret.Result.TMDBSpecified Then
-                        oDBMovieSet.MovieSet.TMDB = ret.Result.TMDB
+
+                    If ret.Result IsNot Nothing Then
+                        ScrapedList.Add(ret.Result)
+
+                        'set new informations for following scrapers
+                        If ret.Result.TitleSpecified Then
+                            oDBMovieSet.MovieSet.Title = ret.Result.Title
+                        End If
+                        If ret.Result.TMDBSpecified Then
+                            oDBMovieSet.MovieSet.TMDB = ret.Result.TMDB
+                        End If
                     End If
-                End If
-                RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_MovieSet
-                If ret.breakChain Then Exit For
+                    If ret.breakChain Then Exit For
+                Finally
+                    RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_MovieSet
+                End Try
             Next
 
             'Merge scraperresults considering global datascraper settings
@@ -1114,39 +1118,41 @@ Public Class ModulesManager
                 For Each _externalScraperModule As _externalScraperModuleClass_Data_TV In modules
                     logger.Trace(String.Format("[ModulesManager] [ScrapeData_TVEpisode] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                     AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                    Try
+                        ret = _externalScraperModule.ProcessorModule.Scraper_TVEpisode(oEpisode, ScrapeOptions)
 
-                    ret = _externalScraperModule.ProcessorModule.Scraper_TVEpisode(oEpisode, ScrapeOptions)
+                        If ret.Cancelled Then Return ret.Cancelled
 
-                    If ret.Cancelled Then Return ret.Cancelled
+                        If ret.Result IsNot Nothing Then
+                            ScrapedList.Add(ret.Result)
 
-                    If ret.Result IsNot Nothing Then
-                        ScrapedList.Add(ret.Result)
-
-                        'set new informations for following scrapers
-                        If ret.Result.AiredSpecified Then
-                            oEpisode.TVEpisode.Aired = ret.Result.Aired
+                            'set new informations for following scrapers
+                            If ret.Result.AiredSpecified Then
+                                oEpisode.TVEpisode.Aired = ret.Result.Aired
+                            End If
+                            If ret.Result.EpisodeSpecified Then
+                                oEpisode.TVEpisode.Episode = ret.Result.Episode
+                            End If
+                            If ret.Result.IMDBSpecified Then
+                                oEpisode.TVEpisode.IMDB = ret.Result.IMDB
+                            End If
+                            If ret.Result.SeasonSpecified Then
+                                oEpisode.TVEpisode.Season = ret.Result.Season
+                            End If
+                            If ret.Result.TitleSpecified Then
+                                oEpisode.TVEpisode.Title = ret.Result.Title
+                            End If
+                            If ret.Result.TMDBSpecified Then
+                                oEpisode.TVEpisode.TMDB = ret.Result.TMDB
+                            End If
+                            If ret.Result.TVDBSpecified Then
+                                oEpisode.TVEpisode.TVDB = ret.Result.TVDB
+                            End If
                         End If
-                        If ret.Result.EpisodeSpecified Then
-                            oEpisode.TVEpisode.Episode = ret.Result.Episode
-                        End If
-                        If ret.Result.IMDBSpecified Then
-                            oEpisode.TVEpisode.IMDB = ret.Result.IMDB
-                        End If
-                        If ret.Result.SeasonSpecified Then
-                            oEpisode.TVEpisode.Season = ret.Result.Season
-                        End If
-                        If ret.Result.TitleSpecified Then
-                            oEpisode.TVEpisode.Title = ret.Result.Title
-                        End If
-                        If ret.Result.TMDBSpecified Then
-                            oEpisode.TVEpisode.TMDB = ret.Result.TMDB
-                        End If
-                        If ret.Result.TVDBSpecified Then
-                            oEpisode.TVEpisode.TVDB = ret.Result.TVDB
-                        End If
-                    End If
-                    RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
-                    If ret.breakChain Then Exit For
+                        If ret.breakChain Then Exit For
+                    Finally
+                        RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                    End Try
                 Next
 
                 'Merge scraperresults considering global datascraper settings
@@ -1189,24 +1195,26 @@ Public Class ModulesManager
                 For Each _externalScraperModule As _externalScraperModuleClass_Data_TV In modules
                     logger.Trace(String.Format("[ModulesManager] [ScrapeData_TVSeason] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                     AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                    Try
+                        ret = _externalScraperModule.ProcessorModule.Scraper_TVSeason(oSeason, ScrapeOptions)
 
-                    ret = _externalScraperModule.ProcessorModule.Scraper_TVSeason(oSeason, ScrapeOptions)
+                        If ret.Cancelled Then Return ret.Cancelled
 
-                    If ret.Cancelled Then Return ret.Cancelled
+                        If ret.Result IsNot Nothing Then
+                            ScrapedList.Add(ret.Result)
 
-                    If ret.Result IsNot Nothing Then
-                        ScrapedList.Add(ret.Result)
-
-                        'set new informations for following scrapers
-                        If ret.Result.TMDBSpecified Then
-                            oSeason.TVSeason.TMDB = ret.Result.TMDB
+                            'set new informations for following scrapers
+                            If ret.Result.TMDBSpecified Then
+                                oSeason.TVSeason.TMDB = ret.Result.TMDB
+                            End If
+                            If ret.Result.TVDBSpecified Then
+                                oSeason.TVSeason.TVDB = ret.Result.TVDB
+                            End If
                         End If
-                        If ret.Result.TVDBSpecified Then
-                            oSeason.TVSeason.TVDB = ret.Result.TVDB
-                        End If
-                    End If
-                    RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
-                    If ret.breakChain Then Exit For
+                        If ret.breakChain Then Exit For
+                    Finally
+                        RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                    End Try
                 Next
 
                 'Merge scraperresults considering global datascraper settings
@@ -1275,33 +1283,35 @@ Public Class ModulesManager
                 For Each _externalScraperModule As _externalScraperModuleClass_Data_TV In modules
                     logger.Trace(String.Format("[ModulesManager] [ScrapeData_TVShow] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                     AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                    Try
+                        ret = _externalScraperModule.ProcessorModule.Scraper_TVShow(oShow, ScrapeModifiers, ScrapeType, ScrapeOptions)
 
-                    ret = _externalScraperModule.ProcessorModule.Scraper_TVShow(oShow, ScrapeModifiers, ScrapeType, ScrapeOptions)
+                        If ret.Cancelled Then Return ret.Cancelled
 
-                    If ret.Cancelled Then Return ret.Cancelled
+                        If ret.Result IsNot Nothing Then
+                            ScrapedList.Add(ret.Result)
 
-                    If ret.Result IsNot Nothing Then
-                        ScrapedList.Add(ret.Result)
-
-                        'set new informations for following scrapers
-                        If ret.Result.IMDBSpecified Then
-                            oShow.TVShow.IMDB = ret.Result.IMDB
+                            'set new informations for following scrapers
+                            If ret.Result.IMDBSpecified Then
+                                oShow.TVShow.IMDB = ret.Result.IMDB
+                            End If
+                            If ret.Result.OriginalTitleSpecified Then
+                                oShow.TVShow.OriginalTitle = ret.Result.OriginalTitle
+                            End If
+                            If ret.Result.TitleSpecified Then
+                                oShow.TVShow.Title = ret.Result.Title
+                            End If
+                            If ret.Result.TMDBSpecified Then
+                                oShow.TVShow.TMDB = ret.Result.TMDB
+                            End If
+                            If ret.Result.TVDBSpecified Then
+                                oShow.TVShow.TVDB = ret.Result.TVDB
+                            End If
                         End If
-                        If ret.Result.OriginalTitleSpecified Then
-                            oShow.TVShow.OriginalTitle = ret.Result.OriginalTitle
-                        End If
-                        If ret.Result.TitleSpecified Then
-                            oShow.TVShow.Title = ret.Result.Title
-                        End If
-                        If ret.Result.TMDBSpecified Then
-                            oShow.TVShow.TMDB = ret.Result.TMDB
-                        End If
-                        If ret.Result.TVDBSpecified Then
-                            oShow.TVShow.TVDB = ret.Result.TVDB
-                        End If
-                    End If
-                    RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
-                    If ret.breakChain Then Exit For
+                        If ret.breakChain Then Exit For
+                    Finally
+                        RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                    End Try
                 Next
 
                 'Merge scraperresults considering global datascraper settings
@@ -1365,6 +1375,7 @@ Public Class ModulesManager
                             ImagesContainer.MainPosters.AddRange(aContainer.MainPosters)
                         End If
                         RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                        If ret.Cancelled Then Exit For
                         If ret.breakChain Then Exit For
                     End If
                 Next
@@ -1419,6 +1430,7 @@ Public Class ModulesManager
                         ImagesContainer.MainPosters.AddRange(aContainer.MainPosters)
                     End If
                     RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_MovieSet
+                    If ret.Cancelled Then Exit For
                     If ret.breakChain Then Exit For
                 End If
             Next
@@ -1507,6 +1519,7 @@ Public Class ModulesManager
                             ImagesContainer.MainPosters.AddRange(aContainer.MainPosters)
                         End If
                         RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                        If ret.Cancelled Then Exit For
                         If ret.breakChain Then Exit For
                     End If
                 Next
@@ -1557,6 +1570,7 @@ Public Class ModulesManager
                     ThemeList.AddRange(aList)
                 End If
                 RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                If ret.Cancelled Then Exit For
                 If ret.breakChain Then Exit For
             Next
         End If
@@ -1595,6 +1609,7 @@ Public Class ModulesManager
                     ThemeList.AddRange(aList)
                 End If
                 RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                If ret.Cancelled Then Exit For
                 If ret.breakChain Then Exit For
             Next
         End If
@@ -1634,6 +1649,7 @@ Public Class ModulesManager
                     TrailerList.AddRange(aList)
                 End If
                 RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                If ret.Cancelled Then Exit For
                 If ret.breakChain Then Exit For
             Next
         End If

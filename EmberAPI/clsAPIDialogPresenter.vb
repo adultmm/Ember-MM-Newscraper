@@ -18,9 +18,11 @@
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
 
+Imports System.Collections.Generic
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Forms
+Imports NLog
 
 ''' <summary>
 ''' Shows scraper / search dialogs according to GeneralDialogsStayOnAppDesktop
@@ -28,6 +30,11 @@ Imports System.Windows.Forms
 ''' window clickable. Call from the thread that created the form.
 ''' </summary>
 Public Class DialogPresenter
+
+    Shared logger As Logger = LogManager.GetCurrentClassLogger()
+
+    Private Shared ReadOnly _activeDialogs As New List(Of Form)
+    Private Shared ReadOnly _activeDialogLock As New Object()
 
 #Region "Constants"
 
@@ -46,9 +53,22 @@ Public Class DialogPresenter
 
 #Region "Methods"
 
+    Public Shared ReadOnly Property HasActiveDialog As Boolean
+        Get
+            SyncLock _activeDialogLock
+                Return _activeDialogs.Count > 0
+            End SyncLock
+        End Get
+    End Property
+
     Public Shared Function Present(dialog As Form) As DialogResult
         If dialog Is Nothing Then
             Throw New ArgumentNullException("dialog")
+        End If
+
+        If ScrapeCancellation.IsRequested Then
+            logger.Trace("[DialogPresenter] [Present] [Abort] Scrape cancellation requested")
+            Return DialogResult.Abort
         End If
 
         Dim stayOnAppDesktop As Boolean = True
@@ -89,6 +109,49 @@ Public Class DialogPresenter
                                  End Function)
     End Sub
 
+    ''' <summary>
+    ''' Closes the dialog currently shown by <see cref="Present"/>, e.g. when the
+    ''' main window Cancel Scraper button is pressed while a search dialog is open.
+    ''' </summary>
+    Public Shared Sub CancelActive()
+        Dim snapshot As List(Of Form) = Nothing
+        SyncLock _activeDialogLock
+            If _activeDialogs.Count > 0 Then
+                snapshot = New List(Of Form)(_activeDialogs)
+            End If
+        End SyncLock
+        If snapshot Is Nothing Then
+            Return
+        End If
+
+        For i As Integer = snapshot.Count - 1 To 0 Step -1
+            Dim dialog As Form = snapshot(i)
+            Try
+                If dialog Is Nothing OrElse dialog.IsDisposed Then
+                    Continue For
+                End If
+
+                Dim closeDialog As Action = Sub()
+                                              If dialog.IsDisposed OrElse Not dialog.Visible Then
+                                                  Return
+                                              End If
+                                              If dialog.DialogResult = DialogResult.None Then
+                                                  dialog.DialogResult = DialogResult.Abort
+                                              End If
+                                              dialog.Close()
+                                          End Sub
+
+                If dialog.InvokeRequired Then
+                    dialog.BeginInvoke(closeDialog)
+                Else
+                    closeDialog()
+                End If
+            Catch ex As Exception
+                logger.Warn(ex, "[DialogPresenter] [CancelActive] Failed to close active dialog")
+            End Try
+        Next
+    End Sub
+
     Private Shared Function PresentCore(dialog As Form, stayOnAppDesktop As Boolean, doNotSwitchDesktop As Boolean) As DialogResult
         Dim ownerHandle As IntPtr = IntPtr.Zero
         If stayOnAppDesktop Then
@@ -109,7 +172,16 @@ Public Class DialogPresenter
             dialog.Show()
         End If
 
-        Return WaitUntilClosed(dialog)
+        SyncLock _activeDialogLock
+            _activeDialogs.Add(dialog)
+        End SyncLock
+        Try
+            Return WaitUntilClosed(dialog)
+        Finally
+            SyncLock _activeDialogLock
+                _activeDialogs.Remove(dialog)
+            End SyncLock
+        End Try
     End Function
 
     Private Shared Function WaitUntilClosed(dialog As Form) As DialogResult
@@ -119,6 +191,9 @@ Public Class DialogPresenter
                                       End Sub
 
         While Not dialog.IsDisposed AndAlso dialog.Visible
+            If ScrapeCancellation.IsRequested AndAlso dialog.DialogResult = DialogResult.None Then
+                dialog.DialogResult = DialogResult.Abort
+            End If
             If dialog.DialogResult <> DialogResult.None Then
                 dialog.Close()
                 Exit While

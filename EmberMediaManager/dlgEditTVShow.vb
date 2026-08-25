@@ -32,6 +32,12 @@ Public Class dlgEditTVShow
     Private lvwActorSorter As ListViewColumnSorter
     Private tmpRating As String
 
+    ''' <summary>
+    ''' Set when the user requests Change Show. Distinguishes intentional DoSearch
+    ''' from DialogResult.Abort caused by host cancel / DialogPresenter.
+    ''' </summary>
+    Public Property ChangeMediaRequested As Boolean = False
+
     'Extrafanarts
     Private ExtrafanartsWarning As Boolean = True
     Private iEFCounter As Integer = 0

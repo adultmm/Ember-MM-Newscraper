@@ -2048,3 +2048,49 @@ Public Class Structures
 #End Region 'Nested Types
 
 End Class 'Structures
+
+''' <summary>
+''' Global "the user requested to stop the running scrape" state. While set, no
+''' scraper dialog may be shown and modules must abort the current item.
+''' </summary>
+Public NotInheritable Class ScrapeCancellation
+    Private Shared _requested As Integer
+
+    Private Sub New()
+    End Sub
+
+    Public Shared ReadOnly Property IsRequested As Boolean
+        Get
+            Return Threading.Thread.VolatileRead(_requested) <> 0
+        End Get
+    End Property
+
+    Public Shared Sub Request()
+        Threading.Interlocked.Exchange(_requested, 1)
+    End Sub
+
+    Public Shared Sub Reset()
+        Threading.Interlocked.Exchange(_requested, 0)
+    End Sub
+End Class
+
+''' <summary>
+''' Distinguishes intentional "Change Movie/Set/Show" (DoSearch scrape) from
+''' DialogResult.Abort returned by host cancel / DialogPresenter short-circuit.
+''' </summary>
+Public NotInheritable Class EditDialogDecision
+    Private Sub New()
+    End Sub
+
+    ''' <summary>
+    ''' True only when the user clicked Change Media. Host CancelActive / sticky
+    ''' Present Abort must not start a scrape.
+    ''' </summary>
+    Public Shared Function ShouldStartChangeMediaScrape(dialogResult As DialogResult,
+                                                        changeMediaRequested As Boolean,
+                                                        scrapeCancellationRequested As Boolean) As Boolean
+        Return dialogResult = DialogResult.Abort AndAlso
+            changeMediaRequested AndAlso
+            Not scrapeCancellationRequested
+    End Function
+End Class

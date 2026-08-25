@@ -657,6 +657,10 @@ Public Class TMDB_Data
                 'no IMDB-ID or TMDB-ID for movie --> search first and try to get ID!
                 If oDBElement.Movie.TitleSpecified Then
                     nMovie = _TMDBAPI_Movie.GetSearchMovieInfo(oDBElement.Movie.Title, oDBElement, ScrapeType, FilteredOptions)
+                    If _TMDBAPI_Movie.UserCancelledSearch Then
+                        logger.Trace("[TMDB_Data] [Scraper_Movie] [Cancelled] Cancelled by user")
+                        Return New Interfaces.ModuleResult_Data_Movie With {.Cancelled = True, .Result = Nothing}
+                    End If
                 End If
                 'if still no search result -> exit
                 If nMovie Is Nothing Then
@@ -711,6 +715,10 @@ Public Class TMDB_Data
                 'no ITMDB-ID for movieset --> search first and try to get ID!
                 If oDBElement.MovieSet.TitleSpecified Then
                     nMovieSet = _TMDBAPI_MovieSet.GetSearchMovieSetInfo(oDBElement.MovieSet.Title, oDBElement, ScrapeType, FilteredOptions)
+                    If _TMDBAPI_MovieSet.UserCancelledSearch Then
+                        logger.Trace(String.Format("[TMDB_Data] [Scraper_MovieSet] [Cancelled] Cancelled by user"))
+                        Return New Interfaces.ModuleResult_Data_MovieSet With {.Cancelled = True, .Result = Nothing}
+                    End If
                 End If
                 'if still no search result -> exit
                 If nMovieSet Is Nothing Then
@@ -779,6 +787,10 @@ Public Class TMDB_Data
                 'no TVDB-ID for tv show --> search first and try to get ID!
                 If oDBElement.TVShow.TitleSpecified Then
                     nTVShow = _TMDBAPI_TV.GetSearchTVShowInfo(oDBElement.TVShow.Title, oDBElement, ScrapeType, ScrapeModifiers, FilteredOptions)
+                    If _TMDBAPI_TV.UserCancelledSearch Then
+                        logger.Trace(String.Format("[TMDB_Data] [Scraper_TV] [Cancelled] Cancelled by user"))
+                        Return New Interfaces.ModuleResult_Data_TVShow With {.Cancelled = True, .Result = Nothing}
+                    End If
                 End If
                 'if still no search result -> exit
                 If nTVShow Is Nothing Then

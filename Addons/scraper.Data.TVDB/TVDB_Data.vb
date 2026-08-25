@@ -261,6 +261,10 @@ Public Class TVDB_Data
                 'no TVDB-ID for tv show --> search first and try to get ID!
                 If oDBTV.TVShow.TitleSpecified Then
                     nTVShow = _scraper.GetSearchTVShowInfo(oDBTV.TVShow.Title, oDBTV, ScrapeType, ScrapeModifiers, FilteredOptions)
+                    If _scraper.UserCancelledSearch Then
+                        logger.Trace("[TVDB_Data] [Scraper_TV] [Abort] [Cancelled] Cancelled by user")
+                        Return New Interfaces.ModuleResult_Data_TVShow With {.Cancelled = True, .Result = Nothing}
+                    End If
                 End If
                 'if still no search result -> exit
                 If nTVShow Is Nothing Then

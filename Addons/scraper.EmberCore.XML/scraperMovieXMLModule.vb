@@ -275,6 +275,7 @@ Public Class EmberXMLScraperModule
                                     If Not IsNothing(lMediaTag) Then
                                         MapFields(DBMovie, DirectCast(lMediaTag, XMLScraper.MediaTags.MovieTag), Options)
                                     Else
+                                        ' User closed the search dialog — treat as item cancel, not "no results".
                                         Return New Interfaces.ModuleResult With {.breakChain = False, .Cancelled = True}
                                     End If
                                 End If
@@ -282,9 +283,8 @@ Public Class EmberXMLScraperModule
                         ElseIf res.Count = 1 Then
                             lMediaTag = XMLManager.GetDetails(res(0))
                             MapFields(DBMovie, DirectCast(lMediaTag, XMLScraper.MediaTags.MovieTag), Options)
-                        Else
-                            Return New Interfaces.ModuleResult With {.breakChain = False, .Cancelled = True}
                         End If
+                        ' Zero search results are not Cancelled: missing data must not look like user cancel.
                 End Select
             ElseIf Master.GlobalScrapeMod.Trailer Then
 
@@ -325,6 +325,7 @@ Public Class EmberXMLScraperModule
                                     If Not IsNothing(lMediaTag) Then
                                         LastDBMovieID = DBMovie.ID
                                     Else
+                                        ' User closed the search dialog — treat as item cancel, not "no results".
                                         Return New Interfaces.ModuleResult With {.breakChain = False, .Cancelled = True}
                                     End If
                                 End If
@@ -332,9 +333,8 @@ Public Class EmberXMLScraperModule
                         ElseIf res.Count = 1 Then
                             lMediaTag = XMLManager.GetDetails(res(0))
                             LastDBMovieID = DBMovie.ID
-                        Else
-                            Return New Interfaces.ModuleResult With {.breakChain = False, .Cancelled = True}
                         End If
+                        ' Zero search results are not Cancelled: missing data must not look like user cancel.
                 End Select
             End If
         Catch ex As Exception

@@ -46,9 +46,19 @@ Namespace TVDBs
         Private _PosterUrl As String
         Private _TVDBApi As TVDB.Web.WebInterface
         Private _TVDBMirror As TVDB.Model.Mirror
-
+        Private _userCancelledSearch As Boolean
 
 #End Region 'Fields
+
+#Region "Properties"
+
+        Public ReadOnly Property UserCancelledSearch As Boolean
+            Get
+                Return _userCancelledSearch
+            End Get
+        End Property
+
+#End Region 'Properties
 
 #Region "Enumerations"
 
@@ -97,6 +107,7 @@ Namespace TVDBs
         End Sub
 
         Public Function GetSearchTVShowInfo(ByVal sShowName As String, ByRef oDBTV As Database.DBElement, ByVal iType As Enums.ScrapeType, ByRef ScrapeModifiers As Structures.ScrapeModifiers, ByRef FilteredOptions As Structures.ScrapeOptions) As MediaContainers.TVShow
+            _userCancelledSearch = False
             Dim r As SearchResults = SearchTVShowByName(sShowName)
 
             Select Case iType
@@ -105,10 +116,13 @@ Namespace TVDBs
                         Return GetTVShowInfo(r.Matches.Item(0).TVDB, ScrapeModifiers, FilteredOptions, False)
                     Else
                         Using dlgSearch As New dlgTVDBSearchResults(_SpecialSettings, Me)
-                            If dlgSearch.ShowDialog(r, sShowName, oDBTV.ShowPath) = DialogResult.OK Then
+                            Dim dlgResult As DialogResult = dlgSearch.ShowDialog(r, sShowName, oDBTV.ShowPath)
+                            If dlgResult = DialogResult.OK Then
                                 If Not String.IsNullOrEmpty(dlgSearch.Result.TVDB) Then
                                     Return GetTVShowInfo(dlgSearch.Result.TVDB, ScrapeModifiers, FilteredOptions, False)
                                 End If
+                            ElseIf dlgResult = DialogResult.Cancel OrElse dlgResult = DialogResult.Abort Then
+                                _userCancelledSearch = True
                             End If
                         End Using
                     End If

@@ -18,6 +18,7 @@
 ' # along with Ember Media Manager.  If not, see <http://www.gnu.org/licenses/>. #
 ' ################################################################################
 
+Imports System.Diagnostics
 Imports System.IO
 Imports System.Reflection
 Imports System.Text.RegularExpressions
@@ -54,6 +55,8 @@ Public Class frmMain
     Private TaskList As New List(Of Task)
     Private TasksDone As Boolean = True
     Private _cleanDBRequest As Structures.ScanOrClean?
+    Private WithEvents _deferredCloseTimer As Timer
+    Private _deferredClosePending As Boolean
 
     Private alActors As New List(Of String)
     Private FilterPanelIsRaised_Movie As Boolean = False
@@ -978,6 +981,9 @@ Public Class frmMain
         lblCanceling.Visible = True
         prbCanceling.Visible = True
 
+        ScrapeCancellation.Request()
+        DialogPresenter.CancelActive()
+
         If bwMovieScraper.IsBusy Then bwMovieScraper.CancelAsync()
         If bwMovieSetScraper.IsBusy Then bwMovieSetScraper.CancelAsync()
         If bwReload_Movies.IsBusy Then bwReload_Movies.CancelAsync()
@@ -987,13 +993,18 @@ Public Class frmMain
         If bwTVEpisodeScraper.IsBusy Then bwTVEpisodeScraper.CancelAsync()
         If bwTVScraper.IsBusy Then bwTVScraper.CancelAsync()
         If bwTVSeasonScraper.IsBusy Then bwTVSeasonScraper.CancelAsync()
-        While bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-            bwReload_TVShows.IsBusy OrElse bwRewriteContent.IsBusy OrElse bwTVEpisodeScraper.IsBusy OrElse bwTVScraper.IsBusy OrElse
-            bwTVSeasonScraper.IsBusy
-            Application.DoEvents()
-            Threading.Thread.Sleep(50)
-        End While
+
+        ' Idle cancel must not leave IsRequested stuck (blocks later Edit / image Present).
+        If Not ScraperOrRewriteWorkersBusy() Then
+            ScrapeCancellation.Reset()
+        End If
     End Sub
+
+    Private Function ScraperOrRewriteWorkersBusy() As Boolean
+        Return bwMovieScraper.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwTVScraper.IsBusy OrElse
+            bwTVEpisodeScraper.IsBusy OrElse bwTVSeasonScraper.IsBusy OrElse bwRewriteContent.IsBusy OrElse
+            bwReload_Movies.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse bwReload_TVShows.IsBusy
+    End Function
 
     Private Sub btnClearFilters_Movies_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnClearFilters_Movies.Click
         ClearFilters_Movies(True)
@@ -2085,6 +2096,13 @@ Public Class frmMain
     End Sub
 
     Private Sub bwMovieScraper_Completed(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwMovieScraper.RunWorkerCompleted
+        ScrapeCancellation.Reset()
+        If Not CanUpdateUiAfterScraperWorker() Then Return
+        If e.Result Is Nothing Then
+            HideScraperProgressUi()
+            SetControlsEnabled(True)
+            Return
+        End If
         Dim Res As Results = DirectCast(e.Result, Results)
 
         If Res.ScrapeType = Enums.ScrapeType.SingleScrape AndAlso Not Res.Cancelled Then
@@ -2092,12 +2110,7 @@ Public Class frmMain
         ElseIf Res.Cancelled Then
             'Reload last partially scraped Movie from disk to get clean informations in DB
             Reload_Movie(Res.DBElement.ID, False, True)
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         Else
             FillList_Main(False, True, False)
@@ -2106,12 +2119,7 @@ Public Class frmMain
             Else
                 ClearInfo()
             End If
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         End If
     End Sub
@@ -2297,6 +2305,13 @@ Public Class frmMain
     End Sub
 
     Private Sub bwMovieSetScraper_Completed(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwMovieSetScraper.RunWorkerCompleted
+        ScrapeCancellation.Reset()
+        If Not CanUpdateUiAfterScraperWorker() Then Return
+        If e.Result Is Nothing Then
+            HideScraperProgressUi()
+            SetControlsEnabled(True)
+            Return
+        End If
         Dim Res As Results = DirectCast(e.Result, Results)
 
         If Res.ScrapeType = Enums.ScrapeType.SingleScrape AndAlso Not Res.Cancelled Then
@@ -2304,12 +2319,7 @@ Public Class frmMain
         ElseIf Res.Cancelled Then
             'Reload last partially scraped MovieSet from disk to get clean informations in DB
             Reload_MovieSet(Res.DBElement.ID)
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         Else
             If dgvMovieSets.SelectedRows.Count > 0 Then
@@ -2317,12 +2327,7 @@ Public Class frmMain
             Else
                 ClearInfo()
             End If
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         End If
     End Sub
@@ -2427,7 +2432,7 @@ Public Class frmMain
                     End If
                 End If
 
-                If bwMovieScraper.CancellationPending Then Exit For
+                If bwMovieSetScraper.CancellationPending Then Exit For
 
                 If Not (Args.ScrapeType = Enums.ScrapeType.SingleScrape) Then
                     bwMovieSetScraper.ReportProgress(-3, String.Concat(Master.eLang.GetString(399, "Downloading and Saving Contents into Database"), ":"))
@@ -2461,6 +2466,13 @@ Public Class frmMain
     End Sub
 
     Private Sub bwTVScraper_Completed(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwTVScraper.RunWorkerCompleted
+        ScrapeCancellation.Reset()
+        If Not CanUpdateUiAfterScraperWorker() Then Return
+        If e.Result Is Nothing Then
+            HideScraperProgressUi()
+            SetControlsEnabled(True)
+            Return
+        End If
         Dim Res As Results = DirectCast(e.Result, Results)
 
         If Res.ScrapeType = Enums.ScrapeType.SingleScrape AndAlso Not Res.Cancelled Then
@@ -2468,12 +2480,7 @@ Public Class frmMain
         ElseIf Res.Cancelled Then
             'Reload last partially scraped TVShow from disk to get clean informations in DB
             Reload_TVShow(Res.DBElement.ID, False, True, True)
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         Else
             If dgvTVShows.SelectedRows.Count > 0 Then
@@ -2481,12 +2488,7 @@ Public Class frmMain
             Else
                 ClearInfo()
             End If
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         End If
     End Sub
@@ -2635,6 +2637,13 @@ Public Class frmMain
     End Sub
 
     Private Sub bwTVEpisodeScraper_Completed(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwTVEpisodeScraper.RunWorkerCompleted
+        ScrapeCancellation.Reset()
+        If Not CanUpdateUiAfterScraperWorker() Then Return
+        If e.Result Is Nothing Then
+            HideScraperProgressUi()
+            SetControlsEnabled(True)
+            Return
+        End If
         Dim Res As Results = DirectCast(e.Result, Results)
 
         If Res.ScrapeType = Enums.ScrapeType.SingleScrape AndAlso Not Res.Cancelled Then
@@ -2642,12 +2651,7 @@ Public Class frmMain
         ElseIf Res.Cancelled Then
             'Reload last partially scraped Episode from disk to get clean informations in DB
             Reload_TVEpisode(Res.DBElement.ID, False, True)
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         Else
             If dgvTVEpisodes.SelectedRows.Count > 0 Then
@@ -2655,12 +2659,7 @@ Public Class frmMain
             Else
                 ClearInfo()
             End If
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         End If
     End Sub
@@ -2783,6 +2782,13 @@ Public Class frmMain
     End Sub
 
     Private Sub bwTVSeasonScraper_Completed(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwTVSeasonScraper.RunWorkerCompleted
+        ScrapeCancellation.Reset()
+        If Not CanUpdateUiAfterScraperWorker() Then Return
+        If e.Result Is Nothing Then
+            HideScraperProgressUi()
+            SetControlsEnabled(True)
+            Return
+        End If
         Dim Res As Results = DirectCast(e.Result, Results)
 
         If Res.ScrapeType = Enums.ScrapeType.SingleScrape AndAlso Not Res.Cancelled Then
@@ -2790,12 +2796,7 @@ Public Class frmMain
         ElseIf Res.Cancelled Then
             'Reload last partially scraped TVSeason from disk to get clean informations in DB
             Reload_TVSeason(Res.DBElement.ID, False, True, False)
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         Else
             If dgvTVSeasons.SelectedRows.Count > 0 Then
@@ -2803,12 +2804,7 @@ Public Class frmMain
             Else
                 ClearInfo()
             End If
-            tslLoading.Visible = False
-            tspbLoading.Visible = False
-            btnCancel.Visible = False
-            lblCanceling.Visible = False
-            prbCanceling.Visible = False
-            pnlCancel.Visible = False
+            HideScraperProgressUi()
             SetControlsEnabled(True)
         End If
     End Sub
@@ -3124,6 +3120,8 @@ Public Class frmMain
     End Sub
 
     Private Sub bwRewriteContent_RunWorkerCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.RunWorkerCompletedEventArgs) Handles bwRewriteContent.RunWorkerCompleted
+        ScrapeCancellation.Reset()
+        If Not CanUpdateUiAfterScraperWorker() Then Return
         tslLoading.Text = String.Empty
         tslLoading.Visible = False
         tspbLoading.Visible = False
@@ -8617,6 +8615,10 @@ Public Class frmMain
 
     Private Sub Edit_Movie(ByRef DBMovie As Database.DBElement, Optional ByVal EventType As Enums.ModuleEventType = Enums.ModuleEventType.AfterEdit_Movie)
         SetControlsEnabled(False)
+        ' Clear sticky cancel so Edit / nested Present can open after a cancelled batch.
+        If ScrapeCancellation.IsRequested AndAlso Not ScraperOrRewriteWorkersBusy() Then
+            ScrapeCancellation.Reset()
+        End If
         If DBMovie.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(DBMovie, True) Then
             Using dEditMovie As New dlgEditMovie
                 ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.BeforeEdit_Movie, Nothing, Nothing, False, DBMovie)
@@ -8633,10 +8635,14 @@ Public Class frmMain
                         Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.All, True)
                         CreateScrapeList_Movie(Enums.ScrapeType.SingleScrape, Master.DefaultOptions_Movie, ScrapeModifiers)
                     Case DialogResult.Abort
-                        Dim ScrapeModifiers As New Structures.ScrapeModifiers
-                        Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.DoSearch, True)
-                        Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.All, True)
-                        CreateScrapeList_Movie(Enums.ScrapeType.SingleScrape, Master.DefaultOptions_Movie, ScrapeModifiers)
+                        If EditDialogDecision.ShouldStartChangeMediaScrape(DialogResult.Abort, dEditMovie.ChangeMediaRequested, ScrapeCancellation.IsRequested) Then
+                            Dim ScrapeModifiers As New Structures.ScrapeModifiers
+                            Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.DoSearch, True)
+                            Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.All, True)
+                            CreateScrapeList_Movie(Enums.ScrapeType.SingleScrape, Master.DefaultOptions_Movie, ScrapeModifiers)
+                        Else
+                            If InfoCleared Then LoadInfo_Movie(DBMovie.ID)
+                        End If
                     Case Else
                         If InfoCleared Then LoadInfo_Movie(DBMovie.ID)
                 End Select
@@ -8648,6 +8654,9 @@ Public Class frmMain
 
     Private Sub Edit_MovieSet(ByRef DBMovieSet As Database.DBElement)
         SetControlsEnabled(False)
+        If ScrapeCancellation.IsRequested AndAlso Not ScraperOrRewriteWorkersBusy() Then
+            ScrapeCancellation.Reset()
+        End If
         'If DBMovieSet.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_Movie(DBMovieSet, True) Then
         Using dEditMovieSet As New dlgEditMovieSet
             ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.BeforeEdit_MovieSet, Nothing, Nothing, False, DBMovieSet)
@@ -8664,10 +8673,14 @@ Public Class frmMain
                     Functions.SetScrapeModifiers(ScrapeModifier, Enums.ModifierType.All, True)
                     CreateScrapeList_MovieSet(Enums.ScrapeType.SingleScrape, Master.DefaultOptions_MovieSet, ScrapeModifier)
                 Case DialogResult.Abort
-                    Dim ScrapeModifier As New Structures.ScrapeModifiers
-                    Functions.SetScrapeModifiers(ScrapeModifier, Enums.ModifierType.DoSearch, True)
-                    Functions.SetScrapeModifiers(ScrapeModifier, Enums.ModifierType.All, True)
-                    CreateScrapeList_MovieSet(Enums.ScrapeType.SingleScrape, Master.DefaultOptions_MovieSet, ScrapeModifier)
+                    If EditDialogDecision.ShouldStartChangeMediaScrape(DialogResult.Abort, dEditMovieSet.ChangeMediaRequested, ScrapeCancellation.IsRequested) Then
+                        Dim ScrapeModifier As New Structures.ScrapeModifiers
+                        Functions.SetScrapeModifiers(ScrapeModifier, Enums.ModifierType.DoSearch, True)
+                        Functions.SetScrapeModifiers(ScrapeModifier, Enums.ModifierType.All, True)
+                        CreateScrapeList_MovieSet(Enums.ScrapeType.SingleScrape, Master.DefaultOptions_MovieSet, ScrapeModifier)
+                    Else
+                        If InfoCleared Then LoadInfo_MovieSet(DBMovieSet.ID)
+                    End If
                 Case Else
                     If InfoCleared Then LoadInfo_MovieSet(DBMovieSet.ID)
             End Select
@@ -8723,6 +8736,9 @@ Public Class frmMain
 
     Private Sub Edit_TVShow(ByRef DBTVShow As Database.DBElement, Optional ByVal EventType As Enums.ModuleEventType = Enums.ModuleEventType.AfterEdit_TVShow)
         SetControlsEnabled(False)
+        If ScrapeCancellation.IsRequested AndAlso Not ScraperOrRewriteWorkersBusy() Then
+            ScrapeCancellation.Reset()
+        End If
         If DBTVShow.IsOnline OrElse FileUtils.Common.CheckOnlineStatus_TVShow(DBTVShow, True) Then
             Using dEditTVShow As New dlgEditTVShow
                 ModulesManager.Instance.RunGeneric(Enums.ModuleEventType.BeforeEdit_TVShow, Nothing, Nothing, False, DBTVShow)
@@ -8738,10 +8754,14 @@ Public Class frmMain
                         Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.All, True)
                         CreateScrapeList_TV(Enums.ScrapeType.SingleScrape, Master.DefaultOptions_TV, ScrapeModifiers)
                     Case DialogResult.Abort
-                        Dim ScrapeModifiers As New Structures.ScrapeModifiers
-                        Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.DoSearch, True)
-                        Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.All, True)
-                        CreateScrapeList_TV(Enums.ScrapeType.SingleScrape, Master.DefaultOptions_TV, ScrapeModifiers)
+                        If EditDialogDecision.ShouldStartChangeMediaScrape(DialogResult.Abort, dEditTVShow.ChangeMediaRequested, ScrapeCancellation.IsRequested) Then
+                            Dim ScrapeModifiers As New Structures.ScrapeModifiers
+                            Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.DoSearch, True)
+                            Functions.SetScrapeModifiers(ScrapeModifiers, Enums.ModifierType.All, True)
+                            CreateScrapeList_TV(Enums.ScrapeType.SingleScrape, Master.DefaultOptions_TV, ScrapeModifiers)
+                        Else
+                            If InfoCleared Then LoadInfo_TVShow(DBTVShow.ID)
+                        End If
                     Case Else
                         If InfoCleared Then LoadInfo_TVShow(DBTVShow.ID)
                 End Select
@@ -10618,8 +10638,87 @@ Public Class frmMain
     End Sub
 
     Private Sub frmMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
+        StopDeferredCloseTimer()
         logger.Info("====Ember Media Manager exiting====")
     End Sub
+
+    Private Sub StartDeferredClose()
+        If _deferredClosePending Then Return
+        _deferredClosePending = True
+        If _deferredCloseTimer Is Nothing Then
+            _deferredCloseTimer = New Timer With {.Interval = 250}
+        End If
+        _deferredCloseTimer.Start()
+    End Sub
+
+    Private Sub StopDeferredCloseTimer()
+        _deferredClosePending = False
+        If _deferredCloseTimer Is Nothing Then Return
+        _deferredCloseTimer.Stop()
+        _deferredCloseTimer.Dispose()
+        _deferredCloseTimer = Nothing
+    End Sub
+
+    Private Sub _deferredCloseTimer_Tick(sender As Object, e As EventArgs) Handles _deferredCloseTimer.Tick
+        _deferredCloseTimer.Stop()
+        _deferredClosePending = False
+        Close()
+    End Sub
+
+    ''' <summary>
+    ''' True when scraper RunWorkerCompleted / ProgressChanged may safely touch WinForms controls.
+    ''' After FormClosing the ToolStrip hosts can already be torn down, which throws NRE in SetVisibleCore.
+    ''' </summary>
+    Private Function CanUpdateUiAfterScraperWorker() As Boolean
+        Return IsHandleCreated AndAlso Not IsDisposed AndAlso Not Disposing
+    End Function
+
+    Private Sub HideScraperProgressUi()
+        If Not CanUpdateUiAfterScraperWorker() Then Return
+        tslLoading.Visible = False
+        tspbLoading.Visible = False
+        btnCancel.Visible = False
+        lblCanceling.Visible = False
+        prbCanceling.Visible = False
+        pnlCancel.Visible = False
+    End Sub
+
+    ''' <summary>
+    ''' Wait until <paramref name="predicate"/> is false, with timeout.
+    ''' Does not cancel scrapes or dialogs — callers that need cancel (FormClosing, btnCancel) do that explicitly.
+    ''' DoEvents remains so BackgroundWorker completions can run on the UI thread.
+    ''' </summary>
+    Private Function WaitForWorkers(predicate As Func(Of Boolean), Optional timeoutMs As Integer = 30000) As Boolean
+        Dim sw As Stopwatch = Stopwatch.StartNew()
+        While predicate()
+            Application.DoEvents()
+            Threading.Thread.Sleep(50)
+            If sw.ElapsedMilliseconds >= timeoutMs Then
+                logger.Warn("[frmMain] WaitForWorkers timed out after {0} ms", timeoutMs)
+                Return False
+            End If
+        End While
+        Return True
+    End Function
+
+    Private Function WorkersBusyDuringShutdown() As Boolean
+        Return fScanner.IsBusy OrElse bwLoadImages_Movie.IsBusy OrElse
+            bwLoadImages_MovieSet.IsBusy OrElse bwDownloadPic.IsBusy OrElse bwMovieScraper.IsBusy OrElse
+            bwMovieSetScraper.IsBusy OrElse bwTVScraper.IsBusy OrElse bwTVEpisodeScraper.IsBusy OrElse
+            bwTVSeasonScraper.IsBusy OrElse bwRewriteContent.IsBusy OrElse
+            bwReload_Movies.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse bwReload_TVShows.IsBusy OrElse
+            bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy OrElse
+            bwLoadImages_TVShow.IsBusy OrElse bwLoadImages_TVEpisode.IsBusy OrElse
+            bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_MovieSetMoviePosters.IsBusy
+    End Function
+
+    Private Function WorkersBusyDuringMaintenance() As Boolean
+        Return bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
+            bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
+            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse
+            bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
+    End Function
+
     ''' <summary>
     ''' The FormClosing event has been called, so prepare the form to shut down
     ''' </summary>
@@ -10629,6 +10728,14 @@ Public Class frmMain
     Private Sub frmMain_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
 
         Try
+            If DialogPresenter.HasActiveDialog Then
+                ScrapeCancellation.Request()
+                DialogPresenter.CancelActive()
+                e.Cancel = True
+                StartDeferredClose()
+                Return
+            End If
+
             Dim doSave As Boolean = True
 
             SetControlsEnabled(False, True)
@@ -10643,6 +10750,9 @@ Public Class frmMain
             If fScanner.IsBusy Then fScanner.Cancel()
             RemoveHandler fScanner.ProgressUpdate, AddressOf ScannerProgressUpdate
 
+            ScrapeCancellation.Request()
+            DialogPresenter.CancelActive()
+
             If bwLoadImages_Movie.IsBusy Then bwLoadImages_Movie.CancelAsync()
             If bwLoadImages_MovieSet.IsBusy Then bwLoadImages_MovieSet.CancelAsync()
             If bwLoadImages_MovieSetMoviePosters.IsBusy Then bwLoadImages_MovieSetMoviePosters.CancelAsync()
@@ -10652,7 +10762,15 @@ Public Class frmMain
             If bwDownloadPic.IsBusy Then bwDownloadPic.CancelAsync()
             If bwReload_Movies.IsBusy Then bwReload_Movies.CancelAsync()
             If bwCleanDB.IsBusy Then bwCleanDB.CancelAsync()
+            If bwPlexIgnoreClean.IsBusy Then bwPlexIgnoreClean.CancelAsync()
             If bwMovieScraper.IsBusy Then bwMovieScraper.CancelAsync()
+            If bwMovieSetScraper.IsBusy Then bwMovieSetScraper.CancelAsync()
+            If bwTVScraper.IsBusy Then bwTVScraper.CancelAsync()
+            If bwTVEpisodeScraper.IsBusy Then bwTVEpisodeScraper.CancelAsync()
+            If bwTVSeasonScraper.IsBusy Then bwTVSeasonScraper.CancelAsync()
+            If bwRewriteContent.IsBusy Then bwRewriteContent.CancelAsync()
+            If bwReload_MovieSets.IsBusy Then bwReload_MovieSets.CancelAsync()
+            If bwReload_TVShows.IsBusy Then bwReload_TVShows.CancelAsync()
 
             lblCanceling.Text = Master.eLang.GetString(99, "Canceling All Processes...")
             btnCancel.Visible = False
@@ -10663,21 +10781,11 @@ Public Class frmMain
 
             If ModulesManager.Instance.QueryAnyGenericIsBusy Then
                 If MessageBox.Show("One or more modules are busy. Do you want to wait until all tasks are finished?", "One or more external Modules are busy", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) = DialogResult.Yes Then
-                    While ModulesManager.Instance.QueryAnyGenericIsBusy
-                        Application.DoEvents()
-                        Threading.Thread.Sleep(50)
-                    End While
+                    WaitForWorkers(Function() ModulesManager.Instance.QueryAnyGenericIsBusy)
                 End If
             End If
 
-            While fScanner.IsBusy OrElse bwLoadImages_Movie.IsBusy _
-            OrElse bwLoadImages_MovieSet.IsBusy OrElse bwDownloadPic.IsBusy OrElse bwMovieScraper.IsBusy _
-            OrElse bwReload_Movies.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse bwCleanDB.IsBusy _
-            OrElse bwLoadImages_TVShow.IsBusy OrElse bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy _
-            OrElse bwLoadImages_MovieSetMoviePosters.IsBusy
-                Application.DoEvents()
-                Threading.Thread.Sleep(50)
-            End While
+            WaitForWorkers(AddressOf WorkersBusyDuringShutdown)
 
             If doSave Then Master.DB.ClearNew()
 
@@ -11133,28 +11241,19 @@ Public Class frmMain
                         Master.fLoading.SetLoadingMesg(Master.eLang.GetString(861, "Command Line Scraping..."))
                         Dim ScrapeModifiers As Structures.ScrapeModifiers = CType(_params(2), Structures.ScrapeModifiers)
                         CreateScrapeList_Movie(CType(_params(1), Enums.ScrapeType), Master.DefaultOptions_Movie, ScrapeModifiers)
-                        While bwMovieScraper.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(Function() bwMovieScraper.IsBusy)
                     Case "scrapemoviesets"
                         Master.fLoading.SetProgressBarStyle(ProgressBarStyle.Marquee)
                         Master.fLoading.SetLoadingMesg(Master.eLang.GetString(861, "Command Line Scraping..."))
                         Dim ScrapeModifiers As Structures.ScrapeModifiers = CType(_params(2), Structures.ScrapeModifiers)
                         CreateScrapeList_MovieSet(CType(_params(1), Enums.ScrapeType), Master.DefaultOptions_MovieSet, ScrapeModifiers)
-                        While bwMovieSetScraper.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(Function() bwMovieSetScraper.IsBusy)
                     Case "scrapetvshows"
                         Master.fLoading.SetProgressBarStyle(ProgressBarStyle.Marquee)
                         Master.fLoading.SetLoadingMesg(Master.eLang.GetString(861, "Command Line Scraping..."))
                         Dim ScrapeModifiers As Structures.ScrapeModifiers = CType(_params(2), Structures.ScrapeModifiers)
                         CreateScrapeList_TV(CType(_params(1), Enums.ScrapeType), Master.DefaultOptions_TV, ScrapeModifiers)
-                        While bwTVScraper.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(Function() bwTVScraper.IsBusy)
                 End Select
 
             Case Enums.ModuleEventType.Generic
@@ -12854,6 +12953,7 @@ Public Class frmMain
             tslLoading.Visible = True
             tspbLoading.Visible = True
             Application.DoEvents()
+            ScrapeCancellation.Reset()
             bwMovieScraper.WorkerSupportsCancellation = True
             bwMovieScraper.WorkerReportsProgress = True
             bwMovieScraper.RunWorkerAsync(New Arguments With {.ScrapeOptions = ScrapeOptions, .ScrapeList = ScrapeList, .ScrapeType = sType})
@@ -13018,6 +13118,7 @@ Public Class frmMain
             tslLoading.Visible = True
             tspbLoading.Visible = True
             Application.DoEvents()
+            ScrapeCancellation.Reset()
             bwMovieSetScraper.WorkerSupportsCancellation = True
             bwMovieSetScraper.WorkerReportsProgress = True
             bwMovieSetScraper.RunWorkerAsync(New Arguments With {.ScrapeOptions = ScrapeOptions, .ScrapeList = ScrapeList, .ScrapeType = sType})
@@ -13216,6 +13317,7 @@ Public Class frmMain
             tslLoading.Visible = True
             tspbLoading.Visible = True
             Application.DoEvents()
+            ScrapeCancellation.Reset()
             bwTVScraper.WorkerSupportsCancellation = True
             bwTVScraper.WorkerReportsProgress = True
             bwTVScraper.RunWorkerAsync(New Arguments With {.ScrapeOptions = ScrapeOptions, .ScrapeList = ScrapeList, .ScrapeType = sType})
@@ -13368,6 +13470,7 @@ Public Class frmMain
             tslLoading.Visible = True
             tspbLoading.Visible = True
             Application.DoEvents()
+            ScrapeCancellation.Reset()
             bwTVEpisodeScraper.WorkerSupportsCancellation = True
             bwTVEpisodeScraper.WorkerReportsProgress = True
             bwTVEpisodeScraper.RunWorkerAsync(New Arguments With {.ScrapeOptions = ScrapeOptions, .ScrapeList = ScrapeList, .ScrapeType = sType})
@@ -13529,6 +13632,7 @@ Public Class frmMain
             tslLoading.Visible = True
             tspbLoading.Visible = True
             Application.DoEvents()
+            ScrapeCancellation.Reset()
             bwTVSeasonScraper.WorkerSupportsCancellation = True
             bwTVSeasonScraper.WorkerReportsProgress = True
             bwTVSeasonScraper.RunWorkerAsync(New Arguments With {.ScrapeOptions = ScrapeOptions, .ScrapeList = ScrapeList, .ScrapeType = sType})
@@ -15512,6 +15616,7 @@ Public Class frmMain
             tspbLoading.Visible = True
             tslLoading.Visible = True
             Application.DoEvents()
+            ScrapeCancellation.Reset()
             bwRewriteContent.WorkerReportsProgress = True
             bwRewriteContent.WorkerSupportsCancellation = True
             bwRewriteContent.RunWorkerAsync(New Arguments With {.ContentType = Enums.ContentType.Movie, .Trigger = bRewriteAll})
@@ -15541,6 +15646,7 @@ Public Class frmMain
             tspbLoading.Visible = True
             tslLoading.Visible = True
             Application.DoEvents()
+            ScrapeCancellation.Reset()
             bwRewriteContent.WorkerReportsProgress = True
             bwRewriteContent.WorkerSupportsCancellation = True
             bwRewriteContent.RunWorkerAsync(New Arguments With {.ContentType = Enums.ContentType.MovieSet, .Trigger = bRewriteAll})
@@ -15570,6 +15676,7 @@ Public Class frmMain
             tspbLoading.Visible = True
             tslLoading.Visible = True
             Application.DoEvents()
+            ScrapeCancellation.Reset()
             bwRewriteContent.WorkerReportsProgress = True
             bwRewriteContent.WorkerSupportsCancellation = True
             bwRewriteContent.RunWorkerAsync(New Arguments With {.ContentType = Enums.ContentType.TV, .Trigger = bRewriteAll})
@@ -17461,10 +17568,7 @@ Public Class frmMain
             End If
 
             'might as well wait for these
-            While bwDownloadPic.IsBusy
-                Application.DoEvents()
-                Threading.Thread.Sleep(50)
-            End While
+            WaitForWorkers(Function() bwDownloadPic.IsBusy)
 
             If dresult.NeedsDBClean_Movie OrElse
                 dresult.NeedsDBClean_TV OrElse
@@ -17482,96 +17586,55 @@ Public Class frmMain
 
                 If dresult.NeedsDBClean_Movie OrElse dresult.NeedsDBClean_TV Then
                     If MessageBox.Show(String.Format(Master.eLang.GetString(1007, "You've changed a setting that makes it necessary that the database is cleaned up. Please make sure that all sources are available!{0}{0}Should the process be continued?"), Environment.NewLine), Master.eLang.GetString(356, "Warning"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) = DialogResult.Yes Then
-                        While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
-                            bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(AddressOf WorkersBusyDuringMaintenance)
                         Dim DBCleaner As New Structures.ScanOrClean
                         'it's not necessary to clean the DB if we clean it anyway after DB update
                         DBCleaner.Movies = dresult.NeedsDBClean_Movie AndAlso Not (dresult.NeedsDBUpdate_Movie AndAlso Master.eSettings.MovieCleanDB)
                         DBCleaner.TV = dresult.NeedsDBClean_TV AndAlso Not (dresult.NeedsDBUpdate_TV AndAlso Master.eSettings.TVCleanDB)
                         CleanDB(DBCleaner)
-                        While bwCleanDB.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(Function() bwCleanDB.IsBusy)
                         partialCleanHandledByDbClean = dresult.NeedsPartialDownloadClean
                     End If
                 End If
 
                 If dresult.NeedsPartialDownloadClean AndAlso Not partialCleanHandledByDbClean Then
-                    While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
-                        bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                        bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
-                        Application.DoEvents()
-                        Threading.Thread.Sleep(50)
-                    End While
+                    WaitForWorkers(AddressOf WorkersBusyDuringMaintenance)
                     PartialDownloadCleanDB(New Structures.ScanOrClean With {.Movies = True, .TV = True})
                 End If
 
                 If dresult.NeedsPlexIgnoreClean_Movie OrElse dresult.NeedsPlexIgnoreClean_TV Then
                     If Not fScanner.IsBusy Then
-                        While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
-                            bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(AddressOf WorkersBusyDuringMaintenance)
                         PlexIgnoreCleanDB(New Structures.PlexIgnoreCleanRequest With {
                             .Movies = dresult.NeedsPlexIgnoreClean_Movie,
                             .TV = dresult.NeedsPlexIgnoreClean_TV,
                             .MovieSourceID = dresult.PlexIgnoreCleanSourceId_Movie,
                             .TVSourceID = dresult.PlexIgnoreCleanSourceId_TV})
-                        While bwPlexIgnoreClean.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(Function() bwPlexIgnoreClean.IsBusy)
                     End If
                 End If
 
                 If dresult.NeedsReload_Movie Then
                     If Not fScanner.IsBusy Then
-                        While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
-                            bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(AddressOf WorkersBusyDuringMaintenance)
                         ReloadAll_Movie()
                     End If
                 End If
                 If dresult.NeedsReload_MovieSet Then
                     If Not fScanner.IsBusy Then
-                        While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
-                            bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(AddressOf WorkersBusyDuringMaintenance)
                         ReloadAll_MovieSet()
                     End If
                 End If
                 If dresult.NeedsReload_TVEpisode OrElse dresult.NeedsReload_TVShow Then
                     If Not fScanner.IsBusy Then
-                        While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
-                            bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(AddressOf WorkersBusyDuringMaintenance)
                         ReloadAll_TVShow(dresult.NeedsReload_TVEpisode)
                     End If
                 End If
                 If dresult.NeedsDBUpdate_Movie OrElse dresult.NeedsDBUpdate_TV Then
                     If Not fScanner.IsBusy Then
-                        While bwLoadImages_Movie.IsBusy OrElse bwMovieScraper.IsBusy OrElse bwReload_Movies.IsBusy OrElse
-                            bwLoadImages_MovieSet.IsBusy OrElse bwMovieSetScraper.IsBusy OrElse bwReload_MovieSets.IsBusy OrElse
-                            bwLoadImages_TVEpisode.IsBusy OrElse bwLoadImages_TVSeason.IsBusy OrElse bwLoadImages_TVShow.IsBusy OrElse bwReload_TVShows.IsBusy OrElse bwCleanDB.IsBusy OrElse bwPlexIgnoreClean.IsBusy
-                            Application.DoEvents()
-                            Threading.Thread.Sleep(50)
-                        End While
+                        WaitForWorkers(AddressOf WorkersBusyDuringMaintenance)
                         LoadMedia(New Structures.ScanOrClean With {.Movies = dresult.NeedsDBUpdate_Movie, .TV = dresult.NeedsDBUpdate_TV})
                     End If
                 End If

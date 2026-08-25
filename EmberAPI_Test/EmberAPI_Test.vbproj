@@ -122,6 +122,9 @@
     <Compile Include="Test_clsAPIImageUtils.vb" />
     <Compile Include="Test_clsAPINumUtils.vb" />
     <Compile Include="Test_ScrapeDecision.vb" />
+    <Compile Include="Test_EditDialogDecision.vb" />
+    <Compile Include="Test_ScrapeCancellation.vb" />
+    <Compile Include="Test_DialogPresenter.vb" />
     <Compile Include="Test_ScrapeData_Movie.vb" />
     <Compile Include="Test_SetPreferredImages.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />

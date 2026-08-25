@@ -31,6 +31,12 @@ Public Class dlgEditMovieSet
 
     Private sMovieID As String = String.Empty
 
+    ''' <summary>
+    ''' Set when the user requests Change Movie Set. Distinguishes intentional
+    ''' DoSearch from DialogResult.Abort caused by host cancel / DialogPresenter.
+    ''' </summary>
+    Public Property ChangeMediaRequested As Boolean = False
+
     Private bsMovies As New BindingSource
     Private dtMovies As New DataTable
     Private KeyBuffer As String = String.Empty

@@ -70,8 +70,19 @@ Public Class Scraper
     Private strPosterURL As String = String.Empty
 
     Private _SpecialSettings As IMDB_Data.SpecialSettings
+    Private _userCancelledSearch As Boolean
 
 #End Region 'Fields
+
+#Region "Properties"
+
+    Public ReadOnly Property UserCancelledSearch As Boolean
+        Get
+            Return _userCancelledSearch
+        End Get
+    End Property
+
+#End Region 'Properties
 
 #Region "Enumerations"
 
@@ -899,6 +910,7 @@ Public Class Scraper
                                            ByRef oDBElement As Database.DBElement,
                                            ByVal scrapetype As Enums.ScrapeType,
                                            ByVal filteredoptions As Structures.ScrapeOptions) As MediaContainers.Movie
+        _userCancelledSearch = False
         Dim r As SearchResults_Movie = SearchMovie(title, year)
 
         Try
@@ -912,10 +924,13 @@ Public Class Scraper
                         Return GetMovieInfo(r.ExactMatches.Item(0).IMDB, False, filteredoptions)
                     Else
                         Using dlgSearch As New dlgIMDBSearchResults_Movie(_SpecialSettings, Me)
-                            If dlgSearch.ShowDialog(r, title, oDBElement.Filename) = DialogResult.OK Then
+                            Dim dlgResult As DialogResult = dlgSearch.ShowDialog(r, title, oDBElement.Filename)
+                            If dlgResult = DialogResult.OK Then
                                 If Not String.IsNullOrEmpty(dlgSearch.Result.IMDB) Then
                                     Return GetMovieInfo(dlgSearch.Result.IMDB, False, filteredoptions)
                                 End If
+                            ElseIf dlgResult = DialogResult.Cancel OrElse dlgResult = DialogResult.Abort Then
+                                _userCancelledSearch = True
                             End If
                         End Using
                     End If
@@ -971,6 +986,7 @@ Public Class Scraper
     End Sub
 
     Public Function GetSearchTVShowInfo(ByVal title As String, ByRef oDBElement As Database.DBElement, ByVal scrapetype As Enums.ScrapeType, ByVal scrapemodifier As Structures.ScrapeModifiers, ByVal FilteredOptions As Structures.ScrapeOptions) As MediaContainers.TVShow
+        _userCancelledSearch = False
         Dim r As SearchResults_TVShow = SearchTVShow(title)
 
         Select Case scrapetype
@@ -979,10 +995,13 @@ Public Class Scraper
                     Return GetTVShowInfo(r.Matches.Item(0).IMDB, scrapemodifier, FilteredOptions, False)
                 Else
                     Using dlgSearch As New dlgIMDBSearchResults_TV(_SpecialSettings, Me)
-                        If dlgSearch.ShowDialog(r, title, oDBElement.ShowPath) = DialogResult.OK Then
+                        Dim dlgResult As DialogResult = dlgSearch.ShowDialog(r, title, oDBElement.ShowPath)
+                        If dlgResult = DialogResult.OK Then
                             If Not String.IsNullOrEmpty(dlgSearch.Result.IMDB) Then
                                 Return GetTVShowInfo(dlgSearch.Result.IMDB, scrapemodifier, FilteredOptions, False)
                             End If
+                        ElseIf dlgResult = DialogResult.Cancel OrElse dlgResult = DialogResult.Abort Then
+                            _userCancelledSearch = True
                         End If
                     End Using
                 End If

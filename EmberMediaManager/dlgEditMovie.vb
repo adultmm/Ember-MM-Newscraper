@@ -37,11 +37,16 @@ Public Class dlgEditMovie
 
     Private CachePath As String = String.Empty
     Private fResults As New Containers.ImgResult
-    Private isAborting As Boolean = False
     Private lvwActorSorter As ListViewColumnSorter
     Private pResults As New Containers.ImgResult
     Private PreviousFrameValue As Integer
     Private tmpRating As String = String.Empty
+
+    ''' <summary>
+    ''' Set when the user clicks Change Movie. Distinguishes intentional DoSearch
+    ''' from DialogResult.Abort caused by host cancel / DialogPresenter.
+    ''' </summary>
+    Public Property ChangeMediaRequested As Boolean = False
 
     'Extrafanarts
     Private ExtrafanartsWarning As Boolean = True
@@ -276,6 +281,7 @@ Public Class dlgEditMovie
 
     Private Sub btnChangeMovie_Click(ByVal sender As Object, ByVal e As EventArgs) Handles btnChangeMovie.Click
         CleanUp()
+        ChangeMediaRequested = True
         DialogResult = DialogResult.Abort
     End Sub
 

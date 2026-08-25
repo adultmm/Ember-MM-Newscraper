@@ -455,6 +455,10 @@ Public Class IMDB_Data
             ElseIf Not ScrapeType = Enums.ScrapeType.SingleScrape Then
                 'no IMDB-ID for movie --> search first!
                 nMovie = _scraper.GetSearchMovieInfo(oDBElement.Movie.Title, oDBElement.Movie.Year, oDBElement, ScrapeType, FilteredOptions)
+                If _scraper.UserCancelledSearch Then
+                    logger.Trace(String.Format("[IMDB_Data] [Scraper_Movie] [Cancelled] Cancelled by user"))
+                    Return New Interfaces.ModuleResult_Data_Movie With {.Cancelled = True, .Result = Nothing}
+                End If
                 'if still no search result -> exit
                 logger.Trace(String.Format("[IMDB_Data] [Scraper_Movie] [Abort] No search result found"))
                 If nMovie Is Nothing Then Return New Interfaces.ModuleResult_Data_Movie With {.Result = Nothing}
@@ -514,6 +518,10 @@ Public Class IMDB_Data
             ElseIf Not ScrapeType = Enums.ScrapeType.SingleScrape Then
                 'no IMDB-ID for tvshow --> search first!
                 nTVShow = _scraper.GetSearchTVShowInfo(oDBElement.TVShow.Title, oDBElement, ScrapeType, ScrapeModifiers, FilteredOptions)
+                If _scraper.UserCancelledSearch Then
+                    logger.Trace(String.Format("[IMDB_Data] [Scraper_TV] [Cancelled] Cancelled by user"))
+                    Return New Interfaces.ModuleResult_Data_TVShow With {.Cancelled = True, .Result = Nothing}
+                End If
                 'if still no search result -> exit
                 logger.Trace(String.Format("[IMDB_Data] [Scraper_TV] [Abort] No search result found"))
                 If nTVShow Is Nothing Then Return New Interfaces.ModuleResult_Data_TVShow With {.Result = Nothing}
