@@ -5925,7 +5925,7 @@ Public Class frmMain
         Dim indX As Integer = dgvMovies.SelectedRows(0).Index
         Dim ID As Long = Convert.ToInt64(dgvMovies.Item("idMovie", indX).Value)
         Dim tmpDBMovie As Database.DBElement = Master.DB.Load_Movie(ID)
-        Edit_Movie(tmpDBMovie)
+        OpenEditAfterDoubleClickMouseUp(Sub() Edit_Movie(tmpDBMovie))
     End Sub
 
     Private Sub dgvMovies_CellEnter(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellEventArgs) Handles dgvMovies.CellEnter
@@ -6585,7 +6585,7 @@ Public Class frmMain
         Dim indX As Integer = dgvMovieSets.SelectedRows(0).Index
         Dim ID As Long = Convert.ToInt64(dgvMovieSets.Item("idSet", indX).Value)
         Dim tmpDBMovieSet As Database.DBElement = Master.DB.Load_MovieSet(ID)
-        Edit_MovieSet(tmpDBMovieSet)
+        OpenEditAfterDoubleClickMouseUp(Sub() Edit_MovieSet(tmpDBMovieSet))
     End Sub
 
     Private Sub dgvMovieSets_CellEnter(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellEventArgs) Handles dgvMovieSets.CellEnter
@@ -7054,7 +7054,7 @@ Public Class frmMain
         Dim indX As Integer = dgvTVEpisodes.SelectedRows(0).Index
         Dim ID As Long = Convert.ToInt64(dgvTVEpisodes.Item("idEpisode", indX).Value)
         Dim tmpDBTVEpisode As Database.DBElement = Master.DB.Load_TVEpisode(ID, True)
-        Edit_TVEpisode(tmpDBTVEpisode)
+        OpenEditAfterDoubleClickMouseUp(Sub() Edit_TVEpisode(tmpDBTVEpisode))
     End Sub
 
     Private Sub dgvTVEpisodes_CellEnter(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellEventArgs) Handles dgvTVEpisodes.CellEnter
@@ -7549,7 +7549,7 @@ Public Class frmMain
         Dim indX As Integer = dgvTVSeasons.SelectedRows(0).Index
         Dim ID As Long = Convert.ToInt64(dgvTVSeasons.Item("idSeason", indX).Value)
         Dim tmpDBTVSeason As Database.DBElement = Master.DB.Load_TVSeason(ID, True, False)
-        Edit_TVSeason(tmpDBTVSeason)
+        OpenEditAfterDoubleClickMouseUp(Sub() Edit_TVSeason(tmpDBTVSeason))
     End Sub
 
     Private Sub dgvTVSeasons_CellEnter(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellEventArgs) Handles dgvTVSeasons.CellEnter
@@ -7973,7 +7973,7 @@ Public Class frmMain
         Dim indX As Integer = dgvTVShows.SelectedRows(0).Index
         Dim ID As Long = Convert.ToInt64(dgvTVShows.Item("idShow", indX).Value)
         Dim tmpDBTVShow As Database.DBElement = Master.DB.Load_TVShow(ID, True, False)
-        Edit_TVShow(tmpDBTVShow)
+        OpenEditAfterDoubleClickMouseUp(Sub() Edit_TVShow(tmpDBTVShow))
     End Sub
 
     Private Sub dgvTVShows_CellEnter(ByVal sender As Object, ByVal e As System.Windows.Forms.DataGridViewCellEventArgs) Handles dgvTVShows.CellEnter
@@ -8611,6 +8611,17 @@ Public Class frmMain
                 End Using
             End If
         End If
+    End Sub
+
+    ''' <summary>
+    ''' Defers Edit until after the double-click MouseUp so DataGridView does not keep
+    ''' mouse capture / drag-select while DialogPresenter shows an owned modeless dialog.
+    ''' Skips when a Present dialog is already open (avoids nested Edit from a second double-click).
+    ''' </summary>
+    Private Sub OpenEditAfterDoubleClickMouseUp(editAction As Action)
+        If editAction Is Nothing Then Return
+        If DialogPresenter.HasActiveDialog Then Return
+        BeginInvoke(editAction)
     End Sub
 
     Private Sub Edit_Movie(ByRef DBMovie As Database.DBElement, Optional ByVal EventType As Enums.ModuleEventType = Enums.ModuleEventType.AfterEdit_Movie)
