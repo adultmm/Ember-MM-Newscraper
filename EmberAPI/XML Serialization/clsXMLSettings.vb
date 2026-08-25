@@ -34,6 +34,7 @@ Partial Public Class clsXMLSettings
     Private _filesystemvalidsubtitlesexts As List(Of String)
     Private _filesystemvalidthemeexts As List(Of String)
     Private _generalcheckupdates As Boolean
+    Private _generalasklongpathprompt As Boolean = True
     Private _generaldaemondrive As String
     Private _generaldaemonpath As String
     Private _generaldateaddedignorenfo As Boolean
@@ -1177,6 +1178,15 @@ Partial Public Class clsXMLSettings
         End Get
         Set(ByVal value As Boolean)
             Me._generalcheckupdates = value
+        End Set
+    End Property
+
+    Public Property GeneralAskLongPathPrompt() As Boolean
+        Get
+            Return Me._generalasklongpathprompt
+        End Get
+        Set(ByVal value As Boolean)
+            Me._generalasklongpathprompt = value
         End Set
     End Property
 

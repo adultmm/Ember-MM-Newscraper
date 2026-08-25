@@ -37,6 +37,11 @@ Partial Class dlgSettings
         Me.chkGeneralImageFilter = New System.Windows.Forms.CheckBox()
         Me.chkGeneralSourceFromFolder = New System.Windows.Forms.CheckBox()
         Me.chkGeneralCheckUpdates = New System.Windows.Forms.CheckBox()
+        Me.chkGeneralAskLongPathPrompt = New System.Windows.Forms.CheckBox()
+        Me.flpGeneralLongPathAsk = New System.Windows.Forms.FlowLayoutPanel()
+        Me.pbGeneralLongPathInfo = New System.Windows.Forms.PictureBox()
+        Me.chkGeneralEnableLongPathSupport = New System.Windows.Forms.CheckBox()
+        Me.ttGeneralLongPath = New System.Windows.Forms.ToolTip(Me.components)
         Me.lblGeneralOverwriteNfo = New System.Windows.Forms.Label()
         Me.chkGeneralOverwriteNfo = New System.Windows.Forms.CheckBox()
         Me.chkGeneralDigitGrpSymbolVotes = New System.Windows.Forms.CheckBox()
@@ -1655,6 +1660,8 @@ Partial Class dlgSettings
         Me.tblSettingsFooter = New System.Windows.Forms.TableLayoutPanel()
         Me.gbGeneralMiscOpts.SuspendLayout
         Me.tblGeneralMisc.SuspendLayout
+        Me.flpGeneralLongPathAsk.SuspendLayout
+        CType(Me.pbGeneralLongPathInfo, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.gbGeneralThemes.SuspendLayout
         Me.tblGeneralThemes.SuspendLayout
         Me.gbFileSystemCleanFiles.SuspendLayout
@@ -2095,25 +2102,27 @@ Partial Class dlgSettings
         Me.tblGeneralMisc.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 100.0!))
         Me.tblGeneralMisc.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 160.0!))
         Me.tblGeneralMisc.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
-        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilterAutoscraper, 1, 7)
-        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilterImagedialog, 1, 8)
-        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilter, 0, 6)
-        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralSourceFromFolder, 0, 3)
+        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilterAutoscraper, 1, 9)
+        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilterImagedialog, 1, 10)
+        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilter, 0, 8)
+        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralSourceFromFolder, 0, 5)
         Me.tblGeneralMisc.Controls.Add(Me.chkGeneralCheckUpdates, 0, 0)
-        Me.tblGeneralMisc.Controls.Add(Me.lblGeneralOverwriteNfo, 0, 2)
-        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralOverwriteNfo, 0, 1)
-        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralDigitGrpSymbolVotes, 0, 4)
-        Me.tblGeneralMisc.Controls.Add(Me.btnGeneralDigitGrpSymbolSettings, 3, 4)
-        Me.tblGeneralMisc.Controls.Add(Me.txtGeneralImageFilterPosterMatchRate, 3, 10)
-        Me.tblGeneralMisc.Controls.Add(Me.lblGeneralImageFilterPosterMatchRate, 2, 10)
-        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilterPoster, 1, 10)
-        Me.tblGeneralMisc.Controls.Add(Me.txtGeneralImageFilterFanartMatchRate, 3, 12)
-        Me.tblGeneralMisc.Controls.Add(Me.lblGeneralImageFilterFanartMatchRate, 2, 12)
-        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilterFanart, 1, 12)
+        Me.tblGeneralMisc.Controls.Add(Me.flpGeneralLongPathAsk, 0, 1)
+        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralEnableLongPathSupport, 0, 2)
+        Me.tblGeneralMisc.Controls.Add(Me.lblGeneralOverwriteNfo, 0, 4)
+        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralOverwriteNfo, 0, 3)
+        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralDigitGrpSymbolVotes, 0, 6)
+        Me.tblGeneralMisc.Controls.Add(Me.btnGeneralDigitGrpSymbolSettings, 3, 6)
+        Me.tblGeneralMisc.Controls.Add(Me.txtGeneralImageFilterPosterMatchRate, 3, 12)
+        Me.tblGeneralMisc.Controls.Add(Me.lblGeneralImageFilterPosterMatchRate, 2, 12)
+        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilterPoster, 1, 12)
+        Me.tblGeneralMisc.Controls.Add(Me.txtGeneralImageFilterFanartMatchRate, 3, 14)
+        Me.tblGeneralMisc.Controls.Add(Me.lblGeneralImageFilterFanartMatchRate, 2, 14)
+        Me.tblGeneralMisc.Controls.Add(Me.chkGeneralImageFilterFanart, 1, 14)
         Me.tblGeneralMisc.Dock = System.Windows.Forms.DockStyle.Fill
         Me.tblGeneralMisc.Location = New System.Drawing.Point(3, 18)
         Me.tblGeneralMisc.Name = "tblGeneralMisc"
-        Me.tblGeneralMisc.RowCount = 13
+        Me.tblGeneralMisc.RowCount = 15
         Me.tblGeneralMisc.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMisc.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMisc.RowStyles.Add(New System.Windows.Forms.RowStyle())
@@ -2127,7 +2136,9 @@ Partial Class dlgSettings
         Me.tblGeneralMisc.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMisc.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.tblGeneralMisc.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.tblGeneralMisc.Size = New System.Drawing.Size(361, 235)
+        Me.tblGeneralMisc.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.tblGeneralMisc.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.tblGeneralMisc.Size = New System.Drawing.Size(361, 269)
         Me.tblGeneralMisc.TabIndex = 17
         '
         'chkGeneralImageFilterAutoscraper
@@ -2193,6 +2204,57 @@ Partial Class dlgSettings
         Me.chkGeneralCheckUpdates.TabIndex = 0
         Me.chkGeneralCheckUpdates.Text = "Check for Updates"
         Me.chkGeneralCheckUpdates.UseVisualStyleBackColor = True
+        '
+        'chkGeneralAskLongPathPrompt
+        '
+        Me.chkGeneralAskLongPathPrompt.AutoSize = True
+        Me.chkGeneralAskLongPathPrompt.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.chkGeneralAskLongPathPrompt.Location = New System.Drawing.Point(0, 3)
+        Me.chkGeneralAskLongPathPrompt.Margin = New System.Windows.Forms.Padding(0, 3, 4, 0)
+        Me.chkGeneralAskLongPathPrompt.Name = "chkGeneralAskLongPathPrompt"
+        Me.chkGeneralAskLongPathPrompt.Size = New System.Drawing.Size(289, 17)
+        Me.chkGeneralAskLongPathPrompt.TabIndex = 0
+        Me.chkGeneralAskLongPathPrompt.Text = "Ask when Windows long path support is needed"
+        Me.chkGeneralAskLongPathPrompt.UseVisualStyleBackColor = True
+        '
+        'flpGeneralLongPathAsk
+        '
+        Me.flpGeneralLongPathAsk.AutoSize = True
+        Me.flpGeneralLongPathAsk.Controls.Add(Me.chkGeneralAskLongPathPrompt)
+        Me.flpGeneralLongPathAsk.Controls.Add(Me.pbGeneralLongPathInfo)
+        Me.tblGeneralMisc.SetColumnSpan(Me.flpGeneralLongPathAsk, 4)
+        Me.flpGeneralLongPathAsk.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.flpGeneralLongPathAsk.Location = New System.Drawing.Point(0, 23)
+        Me.flpGeneralLongPathAsk.Margin = New System.Windows.Forms.Padding(0)
+        Me.flpGeneralLongPathAsk.Name = "flpGeneralLongPathAsk"
+        Me.flpGeneralLongPathAsk.Size = New System.Drawing.Size(361, 23)
+        Me.flpGeneralLongPathAsk.TabIndex = 1
+        Me.flpGeneralLongPathAsk.WrapContents = False
+        '
+        'pbGeneralLongPathInfo
+        '
+        Me.pbGeneralLongPathInfo.Cursor = System.Windows.Forms.Cursors.Help
+        Me.pbGeneralLongPathInfo.Image = System.Drawing.SystemIcons.Information.ToBitmap()
+        Me.pbGeneralLongPathInfo.Location = New System.Drawing.Point(296, 3)
+        Me.pbGeneralLongPathInfo.Margin = New System.Windows.Forms.Padding(0, 3, 0, 0)
+        Me.pbGeneralLongPathInfo.Name = "pbGeneralLongPathInfo"
+        Me.pbGeneralLongPathInfo.Size = New System.Drawing.Size(16, 16)
+        Me.pbGeneralLongPathInfo.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage
+        Me.pbGeneralLongPathInfo.TabIndex = 1
+        Me.pbGeneralLongPathInfo.TabStop = False
+        '
+        'chkGeneralEnableLongPathSupport
+        '
+        Me.chkGeneralEnableLongPathSupport.Anchor = System.Windows.Forms.AnchorStyles.Left
+        Me.chkGeneralEnableLongPathSupport.AutoSize = True
+        Me.tblGeneralMisc.SetColumnSpan(Me.chkGeneralEnableLongPathSupport, 4)
+        Me.chkGeneralEnableLongPathSupport.Font = New System.Drawing.Font("Segoe UI", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.chkGeneralEnableLongPathSupport.Location = New System.Drawing.Point(3, 49)
+        Me.chkGeneralEnableLongPathSupport.Name = "chkGeneralEnableLongPathSupport"
+        Me.chkGeneralEnableLongPathSupport.Size = New System.Drawing.Size(221, 17)
+        Me.chkGeneralEnableLongPathSupport.TabIndex = 2
+        Me.chkGeneralEnableLongPathSupport.Text = "Enable Windows long path support"
+        Me.chkGeneralEnableLongPathSupport.UseVisualStyleBackColor = True
         '
         'lblGeneralOverwriteNfo
         '
@@ -23166,6 +23228,9 @@ Partial Class dlgSettings
         Me.gbGeneralMiscOpts.PerformLayout
         Me.tblGeneralMisc.ResumeLayout(False)
         Me.tblGeneralMisc.PerformLayout
+        Me.flpGeneralLongPathAsk.ResumeLayout(False)
+        Me.flpGeneralLongPathAsk.PerformLayout
+        CType(Me.pbGeneralLongPathInfo, System.ComponentModel.ISupportInitialize).EndInit()
         Me.gbGeneralThemes.ResumeLayout(False)
         Me.gbGeneralThemes.PerformLayout
         Me.tblGeneralThemes.ResumeLayout(False)
@@ -24019,6 +24084,11 @@ End Sub
     Friend WithEvents txtFileSystemValidVideoExts As System.Windows.Forms.TextBox
     Friend WithEvents lstFileSystemValidVideoExts As System.Windows.Forms.ListBox
     Friend WithEvents chkGeneralCheckUpdates As System.Windows.Forms.CheckBox
+    Friend WithEvents chkGeneralAskLongPathPrompt As System.Windows.Forms.CheckBox
+    Friend WithEvents flpGeneralLongPathAsk As System.Windows.Forms.FlowLayoutPanel
+    Friend WithEvents pbGeneralLongPathInfo As System.Windows.Forms.PictureBox
+    Friend WithEvents chkGeneralEnableLongPathSupport As System.Windows.Forms.CheckBox
+    Friend WithEvents ttGeneralLongPath As System.Windows.Forms.ToolTip
     Friend WithEvents gbMovieSourcesBackdropsFolderOpts As System.Windows.Forms.GroupBox
     Friend WithEvents txtMovieSourcesBackdropsFolderPath As System.Windows.Forms.TextBox
     Friend WithEvents btnMovieSourcesBackdropsFolderPathBrowse As System.Windows.Forms.Button

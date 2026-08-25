@@ -211,6 +211,15 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property GeneralAskLongPathPrompt() As Boolean
+        Get
+            Return Settings._XMLSettings.GeneralAskLongPathPrompt
+        End Get
+        Set(ByVal value As Boolean)
+            Settings._XMLSettings.GeneralAskLongPathPrompt = value
+        End Set
+    End Property
+
     Public Property MovieCleanDB() As Boolean
         Get
             Return Settings._XMLSettings.MovieCleanDB
@@ -7098,6 +7107,7 @@ Public Class Settings
         FileSystemValidSubtitlesExts = New List(Of String)
         FileSystemValidThemeExts = New List(Of String)
         GeneralCheckUpdates = False
+        GeneralAskLongPathPrompt = True
         GeneralDaemonDrive = String.Empty
         GeneralDaemonPath = String.Empty
         GeneralDateAddedIgnoreNFO = False

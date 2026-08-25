@@ -199,6 +199,7 @@
     <Compile Include="clsPartialDownloadFilter.vb" />
     <Compile Include="PartialDownloadSidecarHelper.vb" />
     <Compile Include="clsPlexIgnore.vb" />
+    <Compile Include="LongPathAccessNotify.vb" />
     <Compile Include="clsAPIDVD.vb" />
     <Compile Include="clsAPIFileUtils.vb" />
     <Compile Include="clsAPIHTTP.vb" />

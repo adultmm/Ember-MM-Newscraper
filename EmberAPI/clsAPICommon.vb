@@ -1999,6 +1999,8 @@ Public Class Structures
         Dim PlexIgnoreCleanSourceId_TV As Long
         Dim NeedsPartialDownloadClean As Boolean
         Dim NeedsRestart As Boolean
+        ''' <summary>When True with NeedsRestart, skip dlgRestart (caller already confirmed restart).</summary>
+        Dim RestartWithoutPrompt As Boolean
     End Structure
 
     Public Structure PlexIgnoreCleanRequest

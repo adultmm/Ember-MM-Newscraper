@@ -17651,7 +17651,7 @@ Public Class frmMain
                 End If
             End If
 
-            If Not fScanner.IsBusy AndAlso Not bwLoadImages_Movie.IsBusy AndAlso Not bwMovieScraper.IsBusy AndAlso Not bwReload_Movies.IsBusy AndAlso
+            If Not dresult.NeedsRestart AndAlso Not fScanner.IsBusy AndAlso Not bwLoadImages_Movie.IsBusy AndAlso Not bwMovieScraper.IsBusy AndAlso Not bwReload_Movies.IsBusy AndAlso
                     Not bwLoadImages_MovieSet.IsBusy AndAlso Not bwMovieSetScraper.IsBusy AndAlso Not bwReload_MovieSets.IsBusy AndAlso
                     Not bwLoadImages_TVEpisode.IsBusy AndAlso Not bwLoadImages_TVSeason.IsBusy AndAlso Not bwLoadImages_TVShow.IsBusy AndAlso Not bwReload_TVShows.IsBusy AndAlso Not bwCleanDB.IsBusy AndAlso Not bwPlexIgnoreClean.IsBusy Then
                 FillList_Main(True, True, True)
@@ -17666,9 +17666,13 @@ Public Class frmMain
                     Application.DoEvents()
                     Threading.Thread.Sleep(50)
                 End While
-                Dim dRestart As New dlgRestart
-                If dRestart.ShowDialog = DialogResult.OK Then
+                If dresult.RestartWithoutPrompt Then
                     Application.Restart()
+                Else
+                    Dim dRestart As New dlgRestart
+                    If dRestart.ShowDialog = DialogResult.OK Then
+                        Application.Restart()
+                    End If
                 End If
             End If
         Else

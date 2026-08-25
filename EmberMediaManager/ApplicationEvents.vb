@@ -20,6 +20,7 @@
 
 Imports EmberAPI
 Imports NLog
+Imports System.Diagnostics
 Imports System.IO
 
 Namespace My
@@ -146,6 +147,15 @@ Namespace My
 
             Master.eSettings.Load()
 
+            LongPathAccessNotify.NotifyAction = Sub(ex, path) LongPathSupportHelper.OfferPathTooLongResolution()
+            LongPathSupportHelper.RegisterFirstChanceHandler()
+
+            ' Long-path Ask/enable prompt (after settings are available)
+            If LongPathSupportHelper.TryPromptAtStartup() Then
+                e.Cancel = True
+                Return
+            End If
+
             ' Force initialization of languages for main
             Master.eLang.LoadAllLanguage(Master.eSettings.GeneralLanguage)
 
@@ -156,6 +166,8 @@ Namespace My
 
             Master.fLoading.SetLoadingMesg(Master.eLang.GetString(1164, "Loading Main Form. Please wait..."))
             frmEmber = New frmMain
+
+            LongPathSupportHelper.RegisterFirstChanceHandler(frmEmber)
         End Sub
 
         ''' <summary>
@@ -175,6 +187,11 @@ Namespace My
         ''' </summary>
         Private Sub MyApplication_UnhandledException(ByVal sender As Object, ByVal e As Microsoft.VisualBasic.ApplicationServices.UnhandledExceptionEventArgs) Handles Me.UnhandledException
             logger.Error(e.Exception, e.Exception.Source)
+
+            If LongPathAccessNotify.IsLongPathRelatedException(e.Exception) Then
+                LongPathSupportHelper.OfferPathTooLongResolution()
+            End If
+
             MessageBox.Show(e.Exception.Message, "Ember Media Manager", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Application.Log.WriteException(e.Exception, TraceEventType.Critical, "Unhandled Exception.")
         End Sub

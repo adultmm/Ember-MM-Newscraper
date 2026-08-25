@@ -612,6 +612,7 @@ Public Class Scanner
             End If
         Catch ex As Exception
             logger.Error(String.Format("[Scanner] [IsValidDir] Path ""{0}"" has been skipped ({1})", dInfo.Name, ex.Message))
+            LongPathAccessNotify.NotifyIfLongPathRelated(ex, dInfo.FullName, "IsValidDir")
             Return False
         End Try
         Return True 'This is the Else
@@ -1314,6 +1315,7 @@ Public Class Scanner
                 lFi.AddRange(di.GetFiles)
             Catch ex As Exception
                 logger.Error(ex, New StackFrame().GetMethod().Name)
+                LongPathAccessNotify.NotifyIfLongPathRelated(ex, di.FullName, "ScanForFiles_Movie.GetFiles")
             End Try
 
             logger.Debug(String.Format("[Scanner] [ScanForFiles_Movie] Scanning ""{0}"" (source=""{1}"", UsePlexIgnore={2}, isSingle={3}, files={4})",
@@ -1438,6 +1440,7 @@ Public Class Scanner
             End If
         Catch ex As Exception
             logger.Error(ex, New StackFrame().GetMethod().Name)
+            LongPathAccessNotify.NotifyIfLongPathRelated(ex, strPath, "ScanForFiles_Movie")
         End Try
     End Sub
 
@@ -1497,9 +1500,12 @@ Public Class Scanner
     End Sub
 
     Private Sub ScanSourceDirectory_Movie0(ByVal sSource As Database.DBSource, ByVal strPath As String, ByRef processedDirectories As HashSet(Of String))
-        If Directory.Exists(strPath) Then
+        If Not Directory.Exists(strPath) Then
+            LongPathAccessNotify.NotifyIfMissingPathMayBeLong(strPath, "ScanSourceDirectory_Movie0.Exists")
+            Return
+        End If
 
-            Dim dInfo As New DirectoryInfo(strPath)
+        Dim dInfo As New DirectoryInfo(strPath)
 
             Dim dList As IEnumerable(Of DirectoryInfo) = Nothing
 
@@ -1509,12 +1515,14 @@ Public Class Scanner
                         dList = dInfo.GetDirectories.Where(Function(s) (Master.eSettings.MovieGeneralIgnoreLastScan OrElse sSource.Recursive OrElse s.LastWriteTime > SourceLastScan) AndAlso IsValidDir(s, False, sSource)).OrderBy(Function(d) d.LastWriteTime)
                     Catch ex As Exception
                         logger.Error(ex, New StackFrame().GetMethod().Name)
+                        LongPathAccessNotify.NotifyIfLongPathRelated(ex, dInfo.FullName, "ScanSourceDirectory_Movie0.GetDirectories.LastWriteTime")
                     End Try
                 Else
                     Try
                         dList = dInfo.GetDirectories.Where(Function(s) (Master.eSettings.MovieGeneralIgnoreLastScan OrElse sSource.Recursive OrElse s.LastWriteTime > SourceLastScan) AndAlso IsValidDir(s, False, sSource)).OrderBy(Function(d) d.Name)
                     Catch ex As Exception
                         logger.Error(ex, New StackFrame().GetMethod().Name)
+                        LongPathAccessNotify.NotifyIfLongPathRelated(ex, dInfo.FullName, "ScanSourceDirectory_Movie0.GetDirectories.Name")
                     End Try
                 End If
 
@@ -1549,8 +1557,8 @@ Public Class Scanner
 
             Catch ex As Exception
                 logger.Error(ex, New StackFrame().GetMethod().Name)
+                LongPathAccessNotify.NotifyIfLongPathRelated(ex, strPath, "ScanSourceDirectory_Movie0")
             End Try
-        End If
     End Sub
 
     ''' <summary>

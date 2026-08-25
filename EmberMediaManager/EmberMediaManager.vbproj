@@ -212,6 +212,8 @@
     <Compile Include="PartialDownloadUpgradePromptHelper.vb" />
     <Compile Include="PartialDownloadCleanHelper.vb" />
     <Compile Include="PlexIgnorePromptHelper.vb" />
+    <Compile Include="LongPathSupportHelper.vb" />
+    <Compile Include="ThreeButtonPromptHelper.vb" />
     <Compile Include="clsTheming.vb" />
     <Compile Include="dlgAbout.Designer.vb">
       <DependentUpon>dlgAbout.vb</DependentUpon>

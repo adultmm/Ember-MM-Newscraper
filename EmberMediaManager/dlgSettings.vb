@@ -2938,6 +2938,8 @@ Public Class dlgSettings
             chkCleanPosterTBN.Checked = .CleanPosterTBN
             chkFileSystemCleanerWhitelist.Checked = .FileSystemCleanerWhitelist
             chkGeneralCheckUpdates.Checked = .GeneralCheckUpdates
+            chkGeneralAskLongPathPrompt.Checked = .GeneralAskLongPathPrompt
+            LoadLongPathEnableCheckbox()
             chkGeneralDateAddedIgnoreNFO.Checked = .GeneralDateAddedIgnoreNFO
             chkGeneralDigitGrpSymbolVotes.Checked = .GeneralDigitGrpSymbolVotes
             chkGeneralImageFilter.Checked = .GeneralImageFilter
@@ -4988,6 +4990,7 @@ Public Class dlgSettings
             .FileSystemValidThemeExts.Clear()
             .FileSystemValidThemeExts.AddRange(lstFileSystemValidThemeExts.Items.OfType(Of String).ToList)
             .GeneralCheckUpdates = chkGeneralCheckUpdates.Checked
+            .GeneralAskLongPathPrompt = chkGeneralAskLongPathPrompt.Checked
             .GeneralDateAddedIgnoreNFO = chkGeneralDateAddedIgnoreNFO.Checked
             .GeneralDigitGrpSymbolVotes = chkGeneralDigitGrpSymbolVotes.Checked
             .GeneralDateTime = CType(cbGeneralDateTime.SelectedItem, KeyValuePair(Of String, Enums.DateTime)).Value
@@ -6925,6 +6928,17 @@ Public Class dlgSettings
         btnTVSourceEdit.Text = Master.eLang.GetString(535, "Edit Source")
         chkFileSystemCleanerWhitelist.Text = Master.eLang.GetString(440, "Whitelist Video Extensions")
         chkGeneralCheckUpdates.Text = Master.eLang.GetString(432, "Check for Updates")
+        'FIXME: i18n
+        chkGeneralAskLongPathPrompt.Text = "Ask when Windows long path support is needed"
+        'FIXME: i18n
+        chkGeneralEnableLongPathSupport.Text = "Enable Windows long path support"
+        ttGeneralLongPath.SetToolTip(pbGeneralLongPathInfo, String.Join(Environment.NewLine, New String() {
+            "Windows limits paths to 260 characters unless long path support is enabled in the registry.",
+            "",
+            "Ask when needed: show a prompt at startup or when a library scan hits an overlong path.",
+            "",
+            "Enable: turns on the system setting (administrator approval and restart required). When already enabled, the checkbox is checked and locked."
+        }))
         chkGeneralDateAddedIgnoreNFO.Text = Master.eLang.GetString(1209, "Ignore <dateadded> from NFO")
         chkGeneralDigitGrpSymbolVotes.Text = Master.eLang.GetString(1387, "Use digit grouping symbol for Votes count")
         chkGeneralDoubleClickScrape.Text = Master.eLang.GetString(1198, "Enable Image Scrape On Double Right Click")
@@ -8059,6 +8073,125 @@ Public Class dlgSettings
         chkGeneralDialogsDoNotSwitchDesktop.Enabled = chkGeneralDialogsStayOnAppDesktop.Checked
     End Sub
 
+    Private _suppressLongPathEnableHandler As Boolean
+
+    Private Sub LoadLongPathEnableCheckbox()
+        _suppressLongPathEnableHandler = True
+        Try
+            Dim enabled = LongPathSupportHelper.IsWin32LongPathsEnabled()
+            chkGeneralEnableLongPathSupport.Checked = enabled
+            chkGeneralEnableLongPathSupport.Enabled = Not enabled
+        Finally
+            _suppressLongPathEnableHandler = False
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Brief explanation before UAC/restart when enabling long paths from Settings.
+    ''' Returns True to proceed, False to cancel (caller should revert the checkbox).
+    ''' </summary>
+    Private Function ConfirmLongPathEnableExplanation() As Boolean
+        'FIXME: i18n
+        Dim message As String = String.Concat(
+            "This enables Windows long path support system-wide (HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled).", Environment.NewLine, Environment.NewLine,
+            "Administrator approval (UAC) is required. The application will restart afterward so the change can take effect.")
+
+        Return MessageBox.Show(Me, message, "Long Path Support", MessageBoxButtons.OKCancel, MessageBoxIcon.Information) = DialogResult.OK
+    End Function
+
+    ''' <summary>
+    ''' When settings have unsaved changes, ask whether to save before long-path enable + restart.
+    ''' Returns True to proceed with enable, False to cancel (caller should revert the checkbox).
+    ''' </summary>
+    Private Function ConfirmLongPathEnableWithUnsavedSettings() As Boolean
+        If Not btnApply.Enabled Then Return True
+
+        'FIXME: i18n
+        Dim message As String = String.Concat(
+            "You have unsaved settings changes.", Environment.NewLine, Environment.NewLine,
+            "To enable Windows long path support, administrator approval is required and the application will restart afterward.")
+
+        'FIXME: i18n
+        Select Case ThreeButtonPromptHelper.Show(
+            "Long Path Support",
+            message,
+            "Save and continue",
+            "Continue without saving",
+            "Cancel",
+            Me)
+            Case ThreeButtonPromptHelper.ThreeButtonChoice.First
+                SaveSettings(True)
+                SetApplyButton(False)
+                Return True
+            Case ThreeButtonPromptHelper.ThreeButtonChoice.Second
+                Return True
+            Case Else
+                Return False
+        End Select
+    End Function
+
+    Private Sub chkGeneralEnableLongPathSupport_CheckedChanged(sender As Object, e As EventArgs) Handles chkGeneralEnableLongPathSupport.CheckedChanged
+        If _suppressLongPathEnableHandler Then Return
+
+        If Not chkGeneralEnableLongPathSupport.Checked Then
+            _suppressLongPathEnableHandler = True
+            chkGeneralEnableLongPathSupport.Checked = True
+            _suppressLongPathEnableHandler = False
+            'FIXME: i18n
+            MessageBox.Show(
+                "Windows long path support is a system-wide setting and cannot be turned off from Ember Media Manager.",
+                "Long Path Support",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information)
+            Return
+        End If
+
+        If LongPathSupportHelper.IsWin32LongPathsEnabled() Then
+            chkGeneralEnableLongPathSupport.Enabled = False
+            Return
+        End If
+
+        If Not ConfirmLongPathEnableExplanation() Then
+            _suppressLongPathEnableHandler = True
+            chkGeneralEnableLongPathSupport.Checked = False
+            _suppressLongPathEnableHandler = False
+            Return
+        End If
+
+        Dim hadUnsavedChanges = btnApply.Enabled
+        If Not ConfirmLongPathEnableWithUnsavedSettings() Then
+            _suppressLongPathEnableHandler = True
+            chkGeneralEnableLongPathSupport.Checked = False
+            _suppressLongPathEnableHandler = False
+            Return
+        End If
+
+        If LongPathSupportHelper.TryEnableWin32LongPaths() Then
+            sResult.NeedsRestart = True
+            sResult.RestartWithoutPrompt = True
+            If Not hadUnsavedChanges Then
+                'FIXME: i18n
+                MessageBox.Show(
+                    "Windows long path support has been enabled. The application will restart so the change can take effect.",
+                    "Long Path Support",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information)
+            End If
+            DialogResult = DialogResult.OK
+            Close()
+        Else
+            _suppressLongPathEnableHandler = True
+            chkGeneralEnableLongPathSupport.Checked = False
+            _suppressLongPathEnableHandler = False
+            'FIXME: i18n
+            MessageBox.Show(
+                "Windows long path support could not be enabled. Approve the UAC prompt, or set HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled to 1, then restart.",
+                "Long Path Support",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning)
+        End If
+    End Sub
+
     Private Sub txtGeneralImageFilterMatchRate_TextChanged(sender As Object, e As EventArgs) Handles txtGeneralImageFilterPosterMatchRate.LostFocus, txtGeneralImageFilterFanartMatchRate.LostFocus
         If chkGeneralImageFilter.Checked Then
             Dim txtbox As TextBox = CType(sender, TextBox)
@@ -8207,6 +8340,7 @@ Public Class dlgSettings
         chkCleanPosterTBN.CheckedChanged,
         chkFileSystemCleanerWhitelist.CheckedChanged,
         chkGeneralCheckUpdates.CheckedChanged,
+        chkGeneralAskLongPathPrompt.CheckedChanged,
         chkGeneralDateAddedIgnoreNFO.CheckedChanged,
         chkGeneralDigitGrpSymbolVotes.CheckedChanged,
         chkGeneralDisplayGenresText.CheckedChanged,
