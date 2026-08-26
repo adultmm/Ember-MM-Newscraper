@@ -23,7 +23,7 @@ Public Module LongPathSupportHelper
     'FIXME: i18n
     Private Const SettingsLocationHint As String = "You can also enable this later under Settings → General → Misc."
     'FIXME: i18n
-    Private Const AskSettingsHint As String = "Use ""Ask when Windows long path support is needed"" there to control these reminders."
+    Private Const AskSettingsHint As String = "Use ""Ask about Windows long path support"" there to control these reminders."
 
     Private ReadOnly _sync As New Object()
     Private _firstChanceRegistered As Boolean
@@ -226,6 +226,9 @@ Public Module LongPathSupportHelper
     End Sub
 
     Private Sub ShowAlreadyEnabledInfo()
+        ' Same Ask flag as enable prompts: Don't ask again / unchecked setting suppresses this too.
+        If Not Master.eSettings.GeneralAskLongPathPrompt Then Return
+
         'FIXME: i18n
         Dim message As String = String.Concat(
             "A path that is too long was encountered, but Windows long path support is already enabled.", vbCrLf, vbCrLf,

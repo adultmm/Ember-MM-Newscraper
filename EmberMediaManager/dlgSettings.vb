@@ -6929,13 +6929,18 @@ Public Class dlgSettings
         chkFileSystemCleanerWhitelist.Text = Master.eLang.GetString(440, "Whitelist Video Extensions")
         chkGeneralCheckUpdates.Text = Master.eLang.GetString(432, "Check for Updates")
         'FIXME: i18n
-        chkGeneralAskLongPathPrompt.Text = "Ask when Windows long path support is needed"
+        chkGeneralAskLongPathPrompt.Text = "Ask about Windows long path support"
         'FIXME: i18n
         chkGeneralEnableLongPathSupport.Text = "Enable Windows long path support"
         ttGeneralLongPath.SetToolTip(pbGeneralLongPathInfo, String.Join(Environment.NewLine, New String() {
             "Windows limits paths to 260 characters unless long path support is enabled in the registry.",
             "",
-            "Ask when needed: show a prompt at startup or when a library scan hits an overlong path.",
+            "When Ask is on:",
+            "- At every startup, if Windows long path support is off, show Enable now / Not now / Don't ask again.",
+            "- When a long path problem is detected during use, show the same kind of prompt (or an info message if support is already enabled).",
+            "",
+            "Not now: dismiss for this time; you will be asked again later (including next startup).",
+            "Don't ask again (or uncheck Ask): stop all long path prompts and info messages.",
             "",
             "Enable: turns on the system setting (administrator approval and restart required). When already enabled, the checkbox is checked and locked."
         }))

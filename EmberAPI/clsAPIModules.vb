@@ -1362,19 +1362,22 @@ Public Class ModulesManager
                     logger.Trace(String.Format("[ModulesManager] [ScrapeImage_Movie] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                     If QueryScraperCapabilities_Image_Movie(_externalScraperModule, ScrapeModifiers) Then
                         AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
-                        Dim aContainer As New MediaContainers.SearchResultsContainer
-                        ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, aContainer, ScrapeModifiers)
-                        If aContainer IsNot Nothing Then
-                            ImagesContainer.MainBanners.AddRange(aContainer.MainBanners)
-                            ImagesContainer.MainCharacterArts.AddRange(aContainer.MainCharacterArts)
-                            ImagesContainer.MainClearArts.AddRange(aContainer.MainClearArts)
-                            ImagesContainer.MainClearLogos.AddRange(aContainer.MainClearLogos)
-                            ImagesContainer.MainDiscArts.AddRange(aContainer.MainDiscArts)
-                            ImagesContainer.MainFanarts.AddRange(aContainer.MainFanarts)
-                            ImagesContainer.MainLandscapes.AddRange(aContainer.MainLandscapes)
-                            ImagesContainer.MainPosters.AddRange(aContainer.MainPosters)
-                        End If
-                        RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                        Try
+                            Dim aContainer As New MediaContainers.SearchResultsContainer
+                            ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, aContainer, ScrapeModifiers)
+                            If aContainer IsNot Nothing Then
+                                ImagesContainer.MainBanners.AddRange(aContainer.MainBanners)
+                                ImagesContainer.MainCharacterArts.AddRange(aContainer.MainCharacterArts)
+                                ImagesContainer.MainClearArts.AddRange(aContainer.MainClearArts)
+                                ImagesContainer.MainClearLogos.AddRange(aContainer.MainClearLogos)
+                                ImagesContainer.MainDiscArts.AddRange(aContainer.MainDiscArts)
+                                ImagesContainer.MainFanarts.AddRange(aContainer.MainFanarts)
+                                ImagesContainer.MainLandscapes.AddRange(aContainer.MainLandscapes)
+                                ImagesContainer.MainPosters.AddRange(aContainer.MainPosters)
+                            End If
+                        Finally
+                            RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                        End Try
                         If ret.Cancelled Then Exit For
                         If ret.breakChain Then Exit For
                     End If
@@ -1417,19 +1420,22 @@ Public Class ModulesManager
                 logger.Trace(String.Format("[ModulesManager] [ScrapeImage_MovieSet] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                 If QueryScraperCapabilities_Image_MovieSet(_externalScraperModule, ScrapeModifiers) Then
                     AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_MovieSet
-                    Dim aContainer As New MediaContainers.SearchResultsContainer
-                    ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, aContainer, ScrapeModifiers)
-                    If aContainer IsNot Nothing Then
-                        ImagesContainer.MainBanners.AddRange(aContainer.MainBanners)
-                        ImagesContainer.MainCharacterArts.AddRange(aContainer.MainCharacterArts)
-                        ImagesContainer.MainClearArts.AddRange(aContainer.MainClearArts)
-                        ImagesContainer.MainClearLogos.AddRange(aContainer.MainClearLogos)
-                        ImagesContainer.MainDiscArts.AddRange(aContainer.MainDiscArts)
-                        ImagesContainer.MainFanarts.AddRange(aContainer.MainFanarts)
-                        ImagesContainer.MainLandscapes.AddRange(aContainer.MainLandscapes)
-                        ImagesContainer.MainPosters.AddRange(aContainer.MainPosters)
-                    End If
-                    RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_MovieSet
+                    Try
+                        Dim aContainer As New MediaContainers.SearchResultsContainer
+                        ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, aContainer, ScrapeModifiers)
+                        If aContainer IsNot Nothing Then
+                            ImagesContainer.MainBanners.AddRange(aContainer.MainBanners)
+                            ImagesContainer.MainCharacterArts.AddRange(aContainer.MainCharacterArts)
+                            ImagesContainer.MainClearArts.AddRange(aContainer.MainClearArts)
+                            ImagesContainer.MainClearLogos.AddRange(aContainer.MainClearLogos)
+                            ImagesContainer.MainDiscArts.AddRange(aContainer.MainDiscArts)
+                            ImagesContainer.MainFanarts.AddRange(aContainer.MainFanarts)
+                            ImagesContainer.MainLandscapes.AddRange(aContainer.MainLandscapes)
+                            ImagesContainer.MainPosters.AddRange(aContainer.MainPosters)
+                        End If
+                    Finally
+                        RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_MovieSet
+                    End Try
                     If ret.Cancelled Then Exit For
                     If ret.breakChain Then Exit For
                 End If
@@ -1501,24 +1507,27 @@ Public Class ModulesManager
                     logger.Trace(String.Format("[ModulesManager] [ScrapeImage_TV] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                     If QueryScraperCapabilities_Image_TV(_externalScraperModule, ScrapeModifiers) Then
                         AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
-                        Dim aContainer As New MediaContainers.SearchResultsContainer
-                        ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, aContainer, ScrapeModifiers)
-                        If aContainer IsNot Nothing Then
-                            ImagesContainer.EpisodeFanarts.AddRange(aContainer.EpisodeFanarts)
-                            ImagesContainer.EpisodePosters.AddRange(aContainer.EpisodePosters)
-                            ImagesContainer.SeasonBanners.AddRange(aContainer.SeasonBanners)
-                            ImagesContainer.SeasonFanarts.AddRange(aContainer.SeasonFanarts)
-                            ImagesContainer.SeasonLandscapes.AddRange(aContainer.SeasonLandscapes)
-                            ImagesContainer.SeasonPosters.AddRange(aContainer.SeasonPosters)
-                            ImagesContainer.MainBanners.AddRange(aContainer.MainBanners)
-                            ImagesContainer.MainCharacterArts.AddRange(aContainer.MainCharacterArts)
-                            ImagesContainer.MainClearArts.AddRange(aContainer.MainClearArts)
-                            ImagesContainer.MainClearLogos.AddRange(aContainer.MainClearLogos)
-                            ImagesContainer.MainFanarts.AddRange(aContainer.MainFanarts)
-                            ImagesContainer.MainLandscapes.AddRange(aContainer.MainLandscapes)
-                            ImagesContainer.MainPosters.AddRange(aContainer.MainPosters)
-                        End If
-                        RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                        Try
+                            Dim aContainer As New MediaContainers.SearchResultsContainer
+                            ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, aContainer, ScrapeModifiers)
+                            If aContainer IsNot Nothing Then
+                                ImagesContainer.EpisodeFanarts.AddRange(aContainer.EpisodeFanarts)
+                                ImagesContainer.EpisodePosters.AddRange(aContainer.EpisodePosters)
+                                ImagesContainer.SeasonBanners.AddRange(aContainer.SeasonBanners)
+                                ImagesContainer.SeasonFanarts.AddRange(aContainer.SeasonFanarts)
+                                ImagesContainer.SeasonLandscapes.AddRange(aContainer.SeasonLandscapes)
+                                ImagesContainer.SeasonPosters.AddRange(aContainer.SeasonPosters)
+                                ImagesContainer.MainBanners.AddRange(aContainer.MainBanners)
+                                ImagesContainer.MainCharacterArts.AddRange(aContainer.MainCharacterArts)
+                                ImagesContainer.MainClearArts.AddRange(aContainer.MainClearArts)
+                                ImagesContainer.MainClearLogos.AddRange(aContainer.MainClearLogos)
+                                ImagesContainer.MainFanarts.AddRange(aContainer.MainFanarts)
+                                ImagesContainer.MainLandscapes.AddRange(aContainer.MainLandscapes)
+                                ImagesContainer.MainPosters.AddRange(aContainer.MainPosters)
+                            End If
+                        Finally
+                            RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                        End Try
                         If ret.Cancelled Then Exit For
                         If ret.breakChain Then Exit For
                     End If
@@ -1561,15 +1570,18 @@ Public Class ModulesManager
             For Each _externalScraperModule As _externalScraperModuleClass_Theme_Movie In modules
                 logger.Trace(String.Format("[ModulesManager] [ScrapeTheme_Movie] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                 AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
-                Dim aList As New List(Of MediaContainers.MediaFile)
-                ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, Type, aList)
-                If aList IsNot Nothing Then
-                    For Each tItem In aList
-                        tItem.Streams.BuildStreamVariants(True)
-                    Next
-                    ThemeList.AddRange(aList)
-                End If
-                RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                Try
+                    Dim aList As New List(Of MediaContainers.MediaFile)
+                    ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, Type, aList)
+                    If aList IsNot Nothing Then
+                        For Each tItem In aList
+                            tItem.Streams.BuildStreamVariants(True)
+                        Next
+                        ThemeList.AddRange(aList)
+                    End If
+                Finally
+                    RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                End Try
                 If ret.Cancelled Then Exit For
                 If ret.breakChain Then Exit For
             Next
@@ -1600,15 +1612,18 @@ Public Class ModulesManager
             For Each _externalScraperModule As _externalScraperModuleClass_Theme_TV In modules
                 logger.Trace(String.Format("[ModulesManager] [ScrapeTheme_TVShow] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                 AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
-                Dim aList As New List(Of MediaContainers.MediaFile)
-                ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, Type, aList)
-                If aList IsNot Nothing Then
-                    For Each tItem In aList
-                        tItem.Streams.BuildStreamVariants(True)
-                    Next
-                    ThemeList.AddRange(aList)
-                End If
-                RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                Try
+                    Dim aList As New List(Of MediaContainers.MediaFile)
+                    ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, Type, aList)
+                    If aList IsNot Nothing Then
+                        For Each tItem In aList
+                            tItem.Streams.BuildStreamVariants(True)
+                        Next
+                        ThemeList.AddRange(aList)
+                    End If
+                Finally
+                    RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_TV
+                End Try
                 If ret.Cancelled Then Exit For
                 If ret.breakChain Then Exit For
             Next
@@ -1640,15 +1655,18 @@ Public Class ModulesManager
             For Each _externalScraperModule As _externalScraperModuleClass_Trailer_Movie In modules
                 logger.Trace(String.Format("[ModulesManager] [ScrapeTrailer_Movie] [Using] {0}", _externalScraperModule.ProcessorModule.ModuleName))
                 AddHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
-                Dim aList As New List(Of MediaContainers.MediaFile)
-                ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, Type, aList)
-                If aList IsNot Nothing Then
-                    For Each tItem In aList
-                        tItem.Streams.BuildStreamVariants()
-                    Next
-                    TrailerList.AddRange(aList)
-                End If
-                RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                Try
+                    Dim aList As New List(Of MediaContainers.MediaFile)
+                    ret = _externalScraperModule.ProcessorModule.Scraper(DBElement, Type, aList)
+                    If aList IsNot Nothing Then
+                        For Each tItem In aList
+                            tItem.Streams.BuildStreamVariants()
+                        Next
+                        TrailerList.AddRange(aList)
+                    End If
+                Finally
+                    RemoveHandler _externalScraperModule.ProcessorModule.ScraperEvent, AddressOf Handler_ScraperEvent_Movie
+                End Try
                 If ret.Cancelled Then Exit For
                 If ret.breakChain Then Exit For
             Next

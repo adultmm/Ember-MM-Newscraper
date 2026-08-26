@@ -1450,10 +1450,28 @@ Public Class Scanner
     ''' <param name="tShow">TVShowContainer object</param>
     ''' <param name="sPath">Path of folder contianing the episodes</param>
     Public Sub ScanForFiles_TV(ByRef tShow As Database.DBElement, ByVal sPath As String)
-        Dim di As New DirectoryInfo(sPath)
+        Dim di As DirectoryInfo
+        Dim files As IEnumerable(Of FileInfo) = Nothing
+
+        Try
+            di = New DirectoryInfo(sPath)
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name)
+            LongPathAccessNotify.NotifyIfLongPathRelated(ex, sPath, "ScanForFiles_TV.DirectoryInfo")
+            Return
+        End Try
+
         Dim plexIgnoreTV As New EmberAPI.PlexIgnoreFilter(If(tShow.Source IsNot Nothing AndAlso tShow.Source.UsePlexIgnore, di.FullName, String.Empty))
 
-        For Each lFile As FileInfo In di.GetFiles.OrderBy(Function(s) s.Name)
+        Try
+            files = di.GetFiles.OrderBy(Function(s) s.Name)
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name)
+            LongPathAccessNotify.NotifyIfLongPathRelated(ex, di.FullName, "ScanForFiles_TV.GetFiles")
+            Return
+        End Try
+
+        For Each lFile As FileInfo In files
             Try
                 If plexIgnoreTV.IsIgnored(lFile.Name, False) Then
                     logger.Info(String.Format("[Scanner] [ScanForFiles_TV] File ""{0}"" has been ignored (.plexignore rule)", lFile.FullName))
@@ -1472,6 +1490,7 @@ Public Class Scanner
                 End If
             Catch ex As Exception
                 logger.Error(String.Format("[Scanner] [ScanForFiles_TV] File ""{0}"" has been skipped ({1})", lFile.Name, ex.Message))
+                LongPathAccessNotify.NotifyIfLongPathRelated(ex, lFile.FullName, "ScanForFiles_TV.File")
             End Try
         Next
     End Sub
@@ -1597,26 +1616,40 @@ Public Class Scanner
                         inList = dInfo.GetDirectories.Where(Function(d) (Master.eSettings.TVGeneralIgnoreLastScan OrElse d.LastWriteTime > SourceLastScan) AndAlso IsValidDir(d, True, sSource)).OrderBy(Function(d) d.LastWriteTime)
                     Catch ex As Exception
                         logger.Error(ex, New StackFrame().GetMethod().Name)
+                        LongPathAccessNotify.NotifyIfLongPathRelated(ex, dInfo.FullName, "ScanSourceDirectory_TV.GetDirectories.LastWriteTime")
                     End Try
                 Else
                     Try
                         inList = dInfo.GetDirectories.Where(Function(d) (Master.eSettings.TVGeneralIgnoreLastScan OrElse d.LastWriteTime > SourceLastScan) AndAlso IsValidDir(d, True, sSource)).OrderBy(Function(d) d.Name)
                     Catch ex As Exception
                         logger.Error(ex, New StackFrame().GetMethod().Name)
+                        LongPathAccessNotify.NotifyIfLongPathRelated(ex, dInfo.FullName, "ScanSourceDirectory_TV.GetDirectories.Name")
                     End Try
                 End If
 
-                For Each sDirs As DirectoryInfo In inList
-                    ScanForFiles_TV(currShowContainer, sDirs.FullName)
-                    ScanSubDirectory_TV(currShowContainer, sDirs.FullName)
-                Next
+                If inList IsNot Nothing Then
+                    For Each sDirs As DirectoryInfo In inList
+                        ScanForFiles_TV(currShowContainer, sDirs.FullName)
+                        ScanSubDirectory_TV(currShowContainer, sDirs.FullName)
+                    Next
+                End If
 
                 Dim Result = Load_TVShow(currShowContainer, True, True, True)
                 If Not Result = Enums.ScannerEventType.None Then
                     bwPrelim.ReportProgress(-1, New ProgressValue With {.EventType = Result, .ID = currShowContainer.ID, .Message = currShowContainer.TVShow.Title})
                 End If
             Else
-                For Each inDir As DirectoryInfo In dInfo.GetDirectories.Where(Function(d) IsValidDir(d, True, sSource)).OrderBy(Function(d) d.Name)
+                Dim topDirs As IEnumerable(Of DirectoryInfo) = Nothing
+                Try
+                    topDirs = dInfo.GetDirectories.Where(Function(d) IsValidDir(d, True, sSource)).OrderBy(Function(d) d.Name)
+                Catch ex As Exception
+                    logger.Error(ex, New StackFrame().GetMethod().Name)
+                    LongPathAccessNotify.NotifyIfLongPathRelated(ex, dInfo.FullName, "ScanSourceDirectory_TV.GetDirectories")
+                End Try
+
+                If topDirs Is Nothing Then Return
+
+                For Each inDir As DirectoryInfo In topDirs
                     currShowContainer = New Database.DBElement(Enums.ContentType.TVShow)
                     currShowContainer.EpisodeSorting = sSource.EpisodeSorting
                     currShowContainer.Language = sSource.Language
@@ -1630,19 +1663,25 @@ Public Class Scanner
                     If Master.eSettings.TVScanOrderModify Then
                         Try
                             inList = inInfo.GetDirectories.Where(Function(d) (Master.eSettings.TVGeneralIgnoreLastScan OrElse d.LastWriteTime > SourceLastScan) AndAlso IsValidDir(d, True, sSource)).OrderBy(Function(d) d.LastWriteTime)
-                        Catch
+                        Catch ex As Exception
+                            logger.Error(ex, New StackFrame().GetMethod().Name)
+                            LongPathAccessNotify.NotifyIfLongPathRelated(ex, inInfo.FullName, "ScanSourceDirectory_TV.show.GetDirectories.LastWriteTime")
                         End Try
                     Else
                         Try
                             inList = inInfo.GetDirectories.Where(Function(d) (Master.eSettings.TVGeneralIgnoreLastScan OrElse d.LastWriteTime > SourceLastScan) AndAlso IsValidDir(d, True, sSource)).OrderBy(Function(d) d.Name)
-                        Catch
+                        Catch ex As Exception
+                            logger.Error(ex, New StackFrame().GetMethod().Name)
+                            LongPathAccessNotify.NotifyIfLongPathRelated(ex, inInfo.FullName, "ScanSourceDirectory_TV.show.GetDirectories.Name")
                         End Try
                     End If
 
-                    For Each sDirs As DirectoryInfo In inList
-                        ScanForFiles_TV(currShowContainer, sDirs.FullName)
-                        ScanSubDirectory_TV(currShowContainer, sDirs.FullName)
-                    Next
+                    If inList IsNot Nothing Then
+                        For Each sDirs As DirectoryInfo In inList
+                            ScanForFiles_TV(currShowContainer, sDirs.FullName)
+                            ScanSubDirectory_TV(currShowContainer, sDirs.FullName)
+                        Next
+                    End If
 
                     Dim Result = Load_TVShow(currShowContainer, True, True, True)
                     If Not Result = Enums.ScannerEventType.None Then
@@ -1651,6 +1690,8 @@ Public Class Scanner
                 Next
 
             End If
+        Else
+            LongPathAccessNotify.NotifyIfMissingPathMayBeLong(ScanPath, "ScanSourceDirectory_TV.Exists")
         End If
     End Sub
 
@@ -1677,8 +1718,14 @@ Public Class Scanner
         Dim inList As IEnumerable(Of DirectoryInfo) = Nothing
         Dim sSource As Database.DBSource = tShow.Source
 
-        inInfo = New DirectoryInfo(strPath)
-        inList = inInfo.GetDirectories.Where(Function(d) IsValidDir(d, True, sSource)).OrderBy(Function(d) d.Name)
+        Try
+            inInfo = New DirectoryInfo(strPath)
+            inList = inInfo.GetDirectories.Where(Function(d) IsValidDir(d, True, sSource)).OrderBy(Function(d) d.Name)
+        Catch ex As Exception
+            logger.Error(ex, New StackFrame().GetMethod().Name)
+            LongPathAccessNotify.NotifyIfLongPathRelated(ex, strPath, "ScanSubDirectory_TV.GetDirectories")
+            Return
+        End Try
 
         For Each sDirs As DirectoryInfo In inList
             ScanForFiles_TV(tShow, sDirs.FullName)

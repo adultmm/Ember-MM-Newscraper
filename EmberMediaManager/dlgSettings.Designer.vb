@@ -2214,7 +2214,7 @@ Partial Class dlgSettings
         Me.chkGeneralAskLongPathPrompt.Name = "chkGeneralAskLongPathPrompt"
         Me.chkGeneralAskLongPathPrompt.Size = New System.Drawing.Size(289, 17)
         Me.chkGeneralAskLongPathPrompt.TabIndex = 0
-        Me.chkGeneralAskLongPathPrompt.Text = "Ask when Windows long path support is needed"
+        Me.chkGeneralAskLongPathPrompt.Text = "Ask about Windows long path support"
         Me.chkGeneralAskLongPathPrompt.UseVisualStyleBackColor = True
         '
         'flpGeneralLongPathAsk

@@ -58,7 +58,8 @@ Public Module ThreeButtonPromptHelper
             pnlButtons.Controls.Add(btnSecond)
             pnlButtons.Controls.Add(btnFirst)
 
-            dlg.CancelButton = btnThird
+            ' Escape / Cancel maps to the second button ("Not now" / "Continue"), not "Don't ask again".
+            dlg.CancelButton = btnSecond
             dlg.Controls.Add(lblMessage)
             dlg.Controls.Add(pnlButtons)
 
@@ -69,11 +70,11 @@ Public Module ThreeButtonPromptHelper
                                        End Sub
             AddHandler btnSecond.Click, Sub(s, e)
                                             result = ThreeButtonChoice.Second
-                                            dlg.DialogResult = DialogResult.OK
+                                            dlg.DialogResult = DialogResult.Cancel
                                         End Sub
             AddHandler btnThird.Click, Sub(s, e)
                                            result = ThreeButtonChoice.Third
-                                           dlg.DialogResult = DialogResult.Cancel
+                                           dlg.DialogResult = DialogResult.OK
                                        End Sub
 
             If owner IsNot Nothing Then
