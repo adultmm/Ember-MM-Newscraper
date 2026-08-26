@@ -121,6 +121,7 @@
     <Compile Include="Test_clsAPIImages.vb" />
     <Compile Include="Test_clsAPIImageUtils.vb" />
     <Compile Include="Test_clsAPINumUtils.vb" />
+    <Compile Include="Test_LongPathAccessNotify.vb" />
     <Compile Include="Test_ScrapeDecision.vb" />
     <Compile Include="Test_EditDialogDecision.vb" />
     <Compile Include="Test_ScrapeCancellation.vb" />

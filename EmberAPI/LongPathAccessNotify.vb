@@ -48,6 +48,20 @@ Public Module LongPathAccessNotify
         Return Not String.IsNullOrEmpty(GetDetectionReason(ex, contextPath))
     End Function
 
+    ''' <summary>
+    ''' Strict match for AppDomain FirstChance: PathTooLongException or Win32 ERROR_FILENAME_EXCED_RANGE only.
+    ''' Avoids message substring heuristics that can false-positive on unrelated exceptions.
+    ''' </summary>
+    Public Function IsStrictLongPathRelatedException(ByVal ex As Exception) As Boolean
+        Dim current As Exception = ex
+        While current IsNot Nothing
+            If TypeOf current Is PathTooLongException Then Return True
+            If current.HResult = HResultPathTooLong Then Return True
+            current = current.InnerException
+        End While
+        Return False
+    End Function
+
     Public Sub NotifyIfLongPathRelated(ByVal ex As Exception, Optional ByVal contextPath As String = Nothing, Optional ByVal source As String = Nothing)
         Dim reason As String = GetDetectionReason(ex, contextPath)
         If String.IsNullOrEmpty(reason) Then Return
@@ -111,7 +125,11 @@ Public Module LongPathAccessNotify
         Return Nothing
     End Function
 
-    Private Function GetDetectionReason(ByVal ex As Exception, Optional ByVal contextPath As String = Nothing) As String
+    ''' <summary>
+    ''' Detection reason for notify/UI. Friend for unit tests.
+    ''' Does not use bare "too long" message matching (false positives on HTTP/URI/etc.).
+    ''' </summary>
+    Friend Function GetDetectionReason(ByVal ex As Exception, Optional ByVal contextPath As String = Nothing) As String
         If ex Is Nothing Then
             If IsLikelyLongPath(contextPath) Then Return "missing-path"
             Return Nothing
@@ -123,10 +141,6 @@ Public Module LongPathAccessNotify
             If current.HResult = HResultPathTooLong Then Return "HRESULT_PATH_TOO_LONG"
 
             Dim message As String = current.Message
-            If Not String.IsNullOrEmpty(message) AndAlso message.IndexOf("too long", StringComparison.OrdinalIgnoreCase) >= 0 Then
-                Return "message-too-long"
-            End If
-
             If TypeOf current Is DirectoryNotFoundException OrElse TypeOf current Is IOException Then
                 Dim pathInMessage As String = ExtractPathFromExceptionMessage(message)
                 If IsLikelyLongPath(pathInMessage) Then Return "io-with-long-path-in-message"

@@ -158,14 +158,19 @@ Public Module LongPathSupportHelper
     End Sub
 
     Private Sub OnFirstChanceException(ByVal sender As Object, ByVal e As FirstChanceExceptionEventArgs)
-        SyncLock _sync
-            If _uiOfferQueued Then Return
-        End SyncLock
-        If Not LongPathAccessNotify.IsLongPathRelatedException(e.Exception) Then Return
+        ' Ask already gates the UI; exit here so FirstChance does not queue work when opted out.
+        If Master.eSettings Is Nothing OrElse Not Master.eSettings.GeneralAskLongPathPrompt Then Return
         If Not Environment.UserInteractive Then Return
         If Master.isCL Then Return
         ' Ember CLI flag: hide splash / run without main window UI (see clsAPICommandLine)
         If Master.appArgs IsNot Nothing AndAlso Master.appArgs.CommandLine.Contains("-nowindow") Then Return
+
+        SyncLock _sync
+            If _uiOfferQueued Then Return
+        End SyncLock
+
+        ' Strict type/HRESULT only — broad heuristics belong on explicit scanner hooks with a context path.
+        If Not LongPathAccessNotify.IsStrictLongPathRelatedException(e.Exception) Then Return
 
         LongPathAccessNotify.NotifyIfLongPathRelated(e.Exception, Nothing, "FirstChance")
     End Sub
